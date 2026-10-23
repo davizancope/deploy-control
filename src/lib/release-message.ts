@@ -1,0 +1,176 @@
+import { formatDate } from '@/lib/format'
+import { ENVIRONMENT_LABEL, TYPE_LABEL, type DeployType, type Environment } from '@/lib/types'
+
+/** Modelo usado enquanto a organização não salvou o próprio. */
+export const DEFAULT_MESSAGE_TEMPLATE = [
+  'Olá time,',
+  '',
+  'A release **{{release}}** foi publicada em **{{ambiente}}**.',
+  '',
+  'As seguintes tarefas foram incluídas no deploy:',
+  '{{tarefas}}',
+].join('\n')
+
+/** Campos que o modelo pode usar, no formato {{campo}}. */
+export const MESSAGE_PLACEHOLDERS = [
+  { key: 'release', description: 'Nome da release (code version)' },
+  { key: 'ambiente', description: 'Staging ou Produção' },
+  { key: 'projeto', description: 'Nome do projeto' },
+  { key: 'tipo', description: 'Release, Hotfix ou Bugfix' },
+  { key: 'data', description: 'Data do deploy, como 21 out 2026' },
+  { key: 'sprint', description: 'Sprint do deploy' },
+  { key: 'branch', description: 'Branch base do deploy' },
+  { key: 'tarefas', description: 'Uma task por linha, cada uma com link do Jira' },
+  { key: 'tarefas_urls', description: 'Uma task por linha, só a URL do Jira' },
+] as const
+
+export type PlaceholderKey = (typeof MESSAGE_PLACEHOLDERS)[number]['key']
+export type MessageVars = Record<PlaceholderKey, string>
+
+/** Dados do deploy que a mensagem usa; DeployDetail já tem esse formato. */
+export type MessageDeploy = {
+  code_version: string
+  environment: Environment
+  deployed_on: string
+  type: DeployType
+  sprint: string | null
+  branch: string | null
+  tasks: string[]
+  project: { name: string; jira_base_url: string | null }
+}
+
+/** Deploy fictício para a prévia da página de configuração. */
+export const SAMPLE_DEPLOY: MessageDeploy = {
+  code_version: 'release_2026-10-21',
+  environment: 'production',
+  deployed_on: '2026-10-21',
+  type: 'release',
+  sprint: 'Sprint 42',
+  branch: 'release/2026-10-21',
+  tasks: ['ABC-101', 'ABC-102'],
+  project: { name: 'Projeto Exemplo', jira_base_url: 'https://empresa.atlassian.net' },
+}
+
+const PLACEHOLDER = /\{\{\s*([a-z_]+)\s*\}\}/gi
+const NO_TASKS = '- Nenhuma task vinculada'
+
+/**
+ * Endereço de cada task no Jira; sem Jira configurado no projeto, devolve só a chave.
+ * @param tasks Chaves das tasks (ex.: ABC-123).
+ * @param jiraBaseUrl Endereço base do Jira do projeto, sem barra no final.
+ * @returns Um item por task, na mesma ordem.
+ */
+export function taskUrls(tasks: string[], jiraBaseUrl: string | null): string[] {
+  return tasks.map((key) => (jiraBaseUrl ? `${jiraBaseUrl}/browse/${key}` : key))
+}
+
+/**
+ * Valores de cada campo do modelo para um deploy.
+ * @param d Deploy com projeto e tasks.
+ * @returns Mapa campo → texto.
+ */
+export function messageVars(d: MessageDeploy): MessageVars {
+  const jira = d.project.jira_base_url
+  const urls = taskUrls(d.tasks, jira)
+  return {
+    release: d.code_version,
+    ambiente: ENVIRONMENT_LABEL[d.environment],
+    projeto: d.project.name,
+    tipo: TYPE_LABEL[d.type],
+    data: formatDate(d.deployed_on),
+    sprint: d.sprint ?? '—',
+    branch: d.branch ?? '—',
+    tarefas: d.tasks.length ? d.tasks.map((key, i) => (jira ? `- [${key}](${urls[i]})` : `- ${key}`)).join('\n') : NO_TASKS,
+    tarefas_urls: d.tasks.length ? urls.map((u) => `- ${u}`).join('\n') : NO_TASKS,
+  }
+}
+
+/**
+ * Preenche os campos {{campo}} do modelo; campos desconhecidos ficam como escritos para o erro aparecer.
+ * @param template Texto do modelo.
+ * @param vars Valores por campo.
+ * @returns Mensagem em markdown.
+ */
+export function renderTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(PLACEHOLDER, (whole, name: string) => {
+    const key = name.toLowerCase()
+    return Object.hasOwn(vars, key) ? vars[key] : whole
+  })
+}
+
+/**
+ * Campos {{campo}} do modelo que não existem.
+ * @param template Texto do modelo.
+ * @returns Nomes sem repetição, na ordem em que aparecem.
+ */
+export function findUnknownPlaceholders(template: string): string[] {
+  const known = new Set<string>(MESSAGE_PLACEHOLDERS.map((p) => p.key))
+  const unknown = new Set<string>()
+  for (const match of template.matchAll(PLACEHOLDER)) {
+    const key = match[1].toLowerCase()
+    if (!known.has(key)) unknown.add(key)
+  }
+  return [...unknown]
+}
+
+const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+const INLINE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|\*\*([^*\n]+)\*\*|(https?:\/\/(?:(?!&quot;|&#39;|&lt;|&gt;)\S)+)/g
+
+/**
+ * Escapa os caracteres especiais do HTML.
+ * @param text Texto puro.
+ * @returns Texto seguro para entrar em HTML.
+ */
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c])
+}
+
+/**
+ * Converte o markdown inline (negrito, link e URL solta) de uma linha.
+ * @param line Linha em texto puro.
+ * @returns HTML da linha, com todo o resto escapado.
+ */
+function inlineToHtml(line: string): string {
+  return escapeHtml(line).replace(INLINE, (_m, label?: string, href?: string, bold?: string, bare?: string) => {
+    if (href) return `<a href="${href}">${label}</a>`
+    if (bold) return `<strong>${bold}</strong>`
+    const url = (bare as string).replace(/[.,:!?]+$/, '')
+    return `<a href="${url}">${url}</a>${(bare as string).slice(url.length)}`
+  })
+}
+
+/**
+ * Converte o subconjunto de markdown da mensagem (parágrafos, listas com "-", **negrito**, [texto](url) e URLs) em HTML.
+ * @param markdown Mensagem já preenchida.
+ * @returns HTML sem tags vindas do texto; só há links http(s).
+ */
+export function markdownToHtml(markdown: string): string {
+  const blocks: string[] = []
+  let list: string[] = []
+  let paragraph: string[] = []
+  const flushList = () => {
+    if (list.length) blocks.push(`<ul>${list.map((item) => `<li>${item}</li>`).join('')}</ul>`)
+    list = []
+  }
+  const flushParagraph = () => {
+    if (paragraph.length) blocks.push(`<p>${paragraph.join('<br>')}</p>`)
+    paragraph = []
+  }
+  for (const raw of markdown.replace(/\r\n?/g, '\n').split('\n')) {
+    const line = raw.trimEnd()
+    const item = /^\s*[-*]\s+(.*)$/.exec(line)
+    if (item) {
+      flushParagraph()
+      list.push(inlineToHtml(item[1]))
+    } else if (line.trim() === '') {
+      flushParagraph()
+      flushList()
+    } else {
+      flushList()
+      paragraph.push(inlineToHtml(line))
+    }
+  }
+  flushParagraph()
+  flushList()
+  return blocks.join('')
+}

@@ -1,0 +1,121 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/schibsted-grotesk';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* Paleta: grafite azulado sobre papel frio. Staging = azul, Produção = verde, Hotfix = âmbar. */
+:root {
+  --paper: #f2f4f3;
+  --surface: #ffffff;
+  --sunken: #e8eceb;
+  --ink: #15232b;
+  --ink-2: #44545d;
+  --muted: #5d6d76;
+  --line: #d6dde0;
+  --line-strong: #b9c4c9;
+  --staging: #2a62a8;
+  --staging-soft: #e3ecf7;
+  --production: #0d7f57;
+  --production-soft: #ebf6f1;
+  --hotfix: #9a5a06;
+  --hotfix-soft: #fbeed8;
+  --danger: #b42318;
+  --danger-soft: #fde8e6;
+  --focus: #2a62a8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #10181d;
+    --surface: #172229;
+    --sunken: #0c1317;
+    --ink: #e6ecee;
+    --ink-2: #b4c1c7;
+    --muted: #8697a0;
+    --line: #26343c;
+    --line-strong: #3a4b55;
+    --staging: #5f97e0;
+    --staging-soft: #1a2d44;
+    --production: #35a87b;
+    --production-soft: #10291c;
+    --hotfix: #e0a54a;
+    --hotfix-soft: #3a2a10;
+    --danger: #f27d72;
+    --danger-soft: #3d1a17;
+    --focus: #5f97e0;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-staging: var(--staging);
+  --color-staging-soft: var(--staging-soft);
+  --color-production: var(--production);
+  --color-production-soft: var(--production-soft);
+  --color-hotfix: var(--hotfix);
+  --color-hotfix-soft: var(--hotfix-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: 'Schibsted Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@utility field {
+  @apply w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-muted;
+  &:focus {
+    @apply border-staging outline-none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--staging) 20%, transparent);
+  }
+}
+@utility label {
+  @apply mb-1.5 block text-sm font-medium text-ink-2;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-[15px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+}
+@utility btn-primary {
+  @apply btn bg-ink text-paper hover:bg-ink-2;
+}
+@utility btn-quiet {
+  @apply btn border border-line-strong bg-surface text-ink hover:bg-sunken;
+}
+@utility btn-danger {
+  @apply btn border border-danger/40 bg-surface text-danger hover:bg-danger-soft;
+}
+@utility link {
+  @apply text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink;
+}
+@utility code {
+  @apply font-mono text-[0.92em] tracking-tight;
+}
