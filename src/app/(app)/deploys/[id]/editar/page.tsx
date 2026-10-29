@@ -13,13 +13,14 @@ export default async function EditDeployPage({ params }: PageProps<'/deploys/[id
   if (!ctx.canWrite) redirect(`/deploys/${id}`)
   const [deploy, projects, latest, known] = await Promise.all([getDeploy(ctx, id), listProjects(ctx, true), latestVersionByProject(ctx), knownLinksByProject(ctx)])
   if (!deploy) notFound()
+  const choices = projects.filter((p) => !p.archived || p.id === deploy.project_id)
 
   return (
     <div className="max-w-4xl">
       <h1 className="mb-8 text-[28px] font-semibold tracking-tight">
         Editar <span className="code">{deploy.code_version}</span>
       </h1>
-      <DeployForm values={valuesFromDeploy(deploy)} projects={projects} latest={latest} known={known} cancelHref={`/deploys/${deploy.id}`} />
+      <DeployForm values={valuesFromDeploy(deploy)} projects={choices} latest={latest} known={known} cancelHref={`/deploys/${deploy.id}`} />
     </div>
   )
 }

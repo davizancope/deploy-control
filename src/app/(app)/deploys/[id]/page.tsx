@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CopyButton, CopyIconButton } from '@/components/copy-button'
+import { Flash } from '@/components/flash'
 import { EnvBadge, EnvMark, TypeBadge } from '@/components/ui'
 import { getDeploy, getMessageTemplate, type DeployDetail } from '@/lib/data'
 import { daysBetween, formatDate, formatDayHeading, plural } from '@/lib/format'
@@ -48,12 +49,12 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
   return (
     <article>
       {sp.salvo && (
-        <p role="status" className="mb-6 rounded-xl border border-production/30 bg-production-soft px-3 py-2 text-sm">Deploy salvo.</p>
+        <Flash className="mb-6 rounded-xl border border-production/30 bg-production-soft px-3 py-2 text-sm" clearParam="salvo">Deploy salvo.</Flash>
       )}
 
       <header className="mb-8 border-b border-line pb-6">
         <p className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-2">
-          <Link href={`/deploys?projeto=${d.project_id}`} className="link">{d.project.name}</Link>
+          {d.project.archived ? <span>{d.project.name} (arquivado)</span> : <Link href={`/deploys?projeto=${d.project_id}`} className="link">{d.project.name}</Link>}
           <span className="first-letter:uppercase">{formatDayHeading(d.deployed_on)}</span>
         </p>
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">

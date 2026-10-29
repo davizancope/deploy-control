@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { fetchAllPages, listProjects } from '@/lib/data'
+import { fetchAllPages, listProjects, projectIdsFilter } from '@/lib/data'
 import { addDays } from '@/lib/format'
 import { computeInsights, type DashDeploy, type DashPr, type DashTask } from '@/lib/insights'
 import { todayIso } from '@/lib/parse/dates'
@@ -19,7 +19,8 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
   const ctx = await requireContext()
   const sp = await searchParams
   const period = PERIODS.some((p) => p.value === sp.periodo) ? String(sp.periodo) : '90'
-  const projects = await listProjects(ctx, true)
+  const projects = await listProjects(ctx)
+  const scope = projectIdsFilter(projects)
   const projectId = typeof sp.projeto === 'string' && projects.some((p) => p.id === sp.projeto) ? sp.projeto : ''
   const to = todayIso()
   const from = addDays(to, -Number(period) + 1)
@@ -31,7 +32,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
       .eq('org_id', ctx.org.id)
       .gte('deployed_on', from)
       .lte('deployed_on', to)
-    return projectId ? q.eq('project_id', projectId) : q
+    return projectId ? q.eq('project_id', projectId) : q.in('project_id', scope)
   }
   const taskQuery = () => {
     const q = ctx.supabase
@@ -39,7 +40,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
       .select('task_key, project_id, first_staging_on, first_production_on, staging_deploys, production_deploys, last_deployed_on')
       .eq('org_id', ctx.org.id)
       .gte('last_deployed_on', addDays(from, -365))
-    return projectId ? q.eq('project_id', projectId) : q
+    return projectId ? q.eq('project_id', projectId) : q.in('project_id', scope)
   }
   const prQuery = () => {
     const q = ctx.supabase
@@ -47,13 +48,13 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
       .select('id, project_id, url, number, description, link_status, first_staging_on, first_production_on, last_deployed_on')
       .eq('org_id', ctx.org.id)
       .gte('last_deployed_on', addDays(from, -365))
-    return projectId ? q.eq('project_id', projectId) : q
+    return projectId ? q.eq('project_id', projectId) : q.in('project_id', scope)
   }
   const [deployRows, taskRows, prRows, { count: totalDeploys }] = await Promise.all([
     fetchAllPages((a, b) => deployQuery().order('deployed_on').order('id').range(a, b)),
     fetchAllPages((a, b) => taskQuery().order('task_key').order('project_id').range(a, b)),
     fetchAllPages((a, b) => prQuery().order('id').range(a, b)),
-    ctx.supabase.from('deployments').select('id', { count: 'exact', head: true }).eq('org_id', ctx.org.id),
+    ctx.supabase.from('deployments').select('id', { count: 'exact', head: true }).eq('org_id', ctx.org.id).in('project_id', scope),
   ])
 
   if (!totalDeploys) return <EmptyDashboard canWrite={ctx.canWrite} orgName={ctx.org.name} />

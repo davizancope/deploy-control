@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { Flash } from '@/components/flash'
 import { listProjects } from '@/lib/data'
 import { formatDate, plural } from '@/lib/format'
 import { requireContext } from '@/lib/session'
@@ -31,12 +32,12 @@ export default async function ImportPage({ searchParams }: PageProps<'/importar'
       </header>
 
       {ok > 0 && (
-        <p role="status" className="mb-6 rounded-xl border border-production/30 bg-production-soft px-3 py-2">
+        <Flash className="mb-6 rounded-xl border border-production/30 bg-production-soft px-3 py-2" clearParam={['ok', 'dup']}>
           {plural(ok, 'deploy importado', 'deploys importados')}.{dup > 0 ? ` ${plural(dup, 'já existia e foi pulado', 'já existiam e foram pulados')}.` : ''}
-        </p>
+        </Flash>
       )}
       {sp.desfeito && (
-        <p role="status" className="mb-6 glass rounded-2xl px-4 py-2.5">Importação desfeita. Os deploys dela foram removidos.</p>
+        <Flash className="mb-6 glass rounded-2xl px-4 py-2.5" clearParam="desfeito">Importação desfeita. Os deploys dela foram removidos.</Flash>
       )}
 
       <Importer projects={projects.map((p) => ({ id: p.id, name: p.name }))} canManage={ctx.canManage} />
