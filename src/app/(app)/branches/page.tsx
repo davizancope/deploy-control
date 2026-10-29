@@ -24,7 +24,7 @@ const PERIODS = [
 export default async function BranchesPage({ searchParams }: PageProps<'/branches'>) {
   const ctx = await requireContext()
   const sp = await searchParams
-  const projects = await listProjects(ctx, true)
+  const projects = await listProjects(ctx)
   if (projects.length === 0) {
     return (
       <>

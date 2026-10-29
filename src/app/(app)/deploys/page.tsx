@@ -29,7 +29,7 @@ export default async function DeploysPage({ searchParams }: PageProps<'/deploys'
   const ctx = await requireContext()
   const sp = await searchParams
   const filters = readFilters(sp)
-  const [projects, { items, hasMore }] = await Promise.all([listProjects(ctx, true), listDeploys(ctx, filters)])
+  const [projects, { items, hasMore }] = await Promise.all([listProjects(ctx), listDeploys(ctx, filters)])
 
   const groups = new Map<string, typeof items>()
   for (const d of items) groups.set(d.deployed_on, [...(groups.get(d.deployed_on) ?? []), d])

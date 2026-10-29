@@ -1,6 +1,7 @@
 'use client'
 
 import { useFormStatus } from 'react-dom'
+import { Flash } from '@/components/flash'
 import { Icon } from '@/components/icons'
 import { ENVIRONMENT_LABEL, TYPE_LABEL, type DeployType, type Environment } from '@/lib/types'
 
@@ -46,21 +47,36 @@ export function FieldError({ message }: { message?: string }) {
  * Faixa de aviso para erro geral ou confirmação de um formulário.
  * @param props.error Mensagem de erro.
  * @param props.message Mensagem de sucesso.
+ * @param props.autoHide Faz a mensagem de sucesso sumir sozinha (erro nunca some).
+ * @param props.resetKey Valor que, ao mudar, mostra a confirmação de novo; passe o estado do formulário.
  * @returns Bloco com role adequado para leitores de tela.
  */
-export function FormNotice({ error, message }: { error?: string; message?: string }) {
+export function FormNotice({
+  error,
+  message,
+  autoHide,
+  resetKey,
+}: {
+  error?: string
+  message?: string
+  autoHide?: boolean
+  resetKey?: unknown
+}) {
   if (error)
     return (
       <p role="alert" className="rounded-xl border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
         {error}
       </p>
     )
-  if (message)
+  if (message) {
+    const tone = 'rounded-xl border border-production/30 bg-production-soft px-3 py-2 text-sm text-ink'
+    if (autoHide) return <Flash className={tone} resetKey={resetKey}>{message}</Flash>
     return (
-      <p role="status" className="rounded-xl border border-production/30 bg-production-soft px-3 py-2 text-sm text-ink">
+      <p role="status" className={tone}>
         {message}
       </p>
     )
+  }
   return null
 }
 

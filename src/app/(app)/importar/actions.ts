@@ -39,7 +39,8 @@ export async function previewImport(_prev: PreviewState, formData: FormData): Pr
   }
 
   const projects = await listProjects(ctx, true)
-  const byName = new Map(projects.map((p) => [normalizeKey(p.name), p.id]))
+  const byName = new Map(projects.filter((p) => !p.archived).map((p) => [normalizeKey(p.name), p.id]))
+  const archivedNames = new Set(projects.filter((p) => p.archived).map((p) => normalizeKey(p.name)))
   const parsed = sheets.map((s) => parseSheet(s.name, s.rows))
   if (parsed.every((p) => p.error || p.deploys.length === 0)) {
     return { error: 'Nenhuma aba com deploys reconhecíveis. A planilha precisa de uma coluna "Code Version" no cabeçalho.' }
@@ -49,7 +50,9 @@ export async function previewImport(_prev: PreviewState, formData: FormData): Pr
     fileName: file.name.slice(0, 200),
     sheets: parsed.map((p) => ({
       ...p,
-      suggestedTarget: byName.get(normalizeKey(p.sheetName)) ?? (ctx.canManage && !p.error && p.deploys.length ? 'new' : 'skip'),
+      suggestedTarget:
+        byName.get(normalizeKey(p.sheetName)) ??
+        (ctx.canManage && !p.error && p.deploys.length && !archivedNames.has(normalizeKey(p.sheetName)) ? 'new' : 'skip'),
     })),
   }
 }
@@ -79,6 +82,7 @@ export async function commitImport(_prev: CommitState, formData: FormData): Prom
     if (projectId === 'new') {
       if (!ctx.canManage) return { error: 'Só donos e admins criam projetos. Escolha um projeto existente.' }
       const existing = projects.find((p) => normalizeKey(p.name) === normalizeKey(sheet.name))
+      if (existing?.archived) return { error: `O projeto ${existing.name} está arquivado. Reative-o antes de importar.` }
       if (existing) {
         projectId = existing.id
       } else {
@@ -90,8 +94,10 @@ export async function commitImport(_prev: CommitState, formData: FormData): Prom
         if (error) return { error: `Não consegui criar o projeto ${sheet.name}: ${error.message}` }
         projectId = data.id as string
       }
-    } else if (!projects.some((p) => p.id === projectId)) {
-      return { error: `Projeto escolhido para a aba ${sheet.name} não existe mais.` }
+    } else {
+      const chosen = projects.find((p) => p.id === projectId)
+      if (!chosen) return { error: `Projeto escolhido para a aba ${sheet.name} não existe mais.` }
+      if (chosen.archived) return { error: `O projeto ${chosen.name} está arquivado. Reative-o antes de importar.` }
     }
 
     // Evita duplicar o que já foi importado ou registrado antes.

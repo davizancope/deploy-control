@@ -11,7 +11,7 @@ export function OrgForm() {
       <FormNotice error={state.error} />
       <div>
         <label className="label" htmlFor="name">Nome da organização</label>
-        <input className="field" id="name" name="name" placeholder="Ex.: Backlgrs" required autoFocus />
+        <input className="field" id="name" name="name" placeholder="Ex.: Empresa" required autoFocus />
         <FieldError message={state.fieldErrors?.name} />
       </div>
       <SubmitButton busy={pending} pending="Criando…" className="btn-primary w-full">Criar organização</SubmitButton>

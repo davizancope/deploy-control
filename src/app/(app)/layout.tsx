@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { BrandMark } from '@/components/icons'
 import { signOut } from '@/app/(auth)/actions'
+import { listProjects, projectIdsFilter } from '@/lib/data'
 import { requireContext } from '@/lib/session'
 import { ROLE_LABEL } from '@/lib/types'
 import { Nav } from './nav'
@@ -8,9 +9,10 @@ import { OrgSwitcher } from './org-switcher'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireContext()
+  const scope = projectIdsFilter(await listProjects(ctx))
   const [prs, commits] = await Promise.all([
-    ctx.supabase.from('pull_request_summary').select('id', { count: 'exact', head: true }).eq('org_id', ctx.org.id).eq('link_status', 'pending'),
-    ctx.supabase.from('commit_summary').select('id', { count: 'exact', head: true }).eq('org_id', ctx.org.id).eq('link_status', 'pending'),
+    ctx.supabase.from('pull_request_summary').select('id', { count: 'exact', head: true }).eq('org_id', ctx.org.id).eq('link_status', 'pending').in('project_id', scope),
+    ctx.supabase.from('commit_summary').select('id', { count: 'exact', head: true }).eq('org_id', ctx.org.id).eq('link_status', 'pending').in('project_id', scope),
   ])
   const pendingLinks = (prs.count ?? 0) + (commits.count ?? 0)
   return (

@@ -1,4 +1,4 @@
--- Prefixo das tasks do Jira por projeto (ex.: SUZSFCCSUS): permite informar só o número da task e montar a chave PREFIXO-NÚMERO.
+-- Prefixo das tasks do Jira por projeto (ex.: PJTX): permite informar só o número da task e montar a chave PREFIXO-NÚMERO.
 
 alter table public.projects
   add column jira_project_prefix text

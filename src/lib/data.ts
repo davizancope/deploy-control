@@ -79,6 +79,17 @@ export async function listProjects(ctx: AppContext, includeArchived = false): Pr
   return (data ?? []) as Project[]
 }
 
+const NO_ROWS_ID = '00000000-0000-0000-0000-000000000000'
+
+/**
+ * Prepara uma lista de projetos para `.in('project_id', ...)`, que não aceita lista vazia.
+ * @param projects Projetos que devem entrar na consulta.
+ * @returns IDs dos projetos, ou um ID que não existe quando a lista está vazia.
+ */
+export function projectIdsFilter(projects: Pick<Project, 'id'>[]): string[] {
+  return projects.length ? projects.map((p) => p.id) : [NO_ROWS_ID]
+}
+
 const SAFE_SEARCH = /[^A-Za-z0-9._/\-]/g
 
 /**
@@ -92,9 +103,10 @@ export async function listDeploys(ctx: AppContext, f: DeployFilters): Promise<{ 
   let query = ctx.supabase
     .from('deployments')
     .select(
-      'id, project_id, code_version, branch, environment, deployed_on, sprint, type, projects(name), deployment_tasks(count), deployment_pull_requests(count)',
+      'id, project_id, code_version, branch, environment, deployed_on, sprint, type, projects!inner(name), deployment_tasks(count), deployment_pull_requests(count)',
     )
     .eq('org_id', ctx.org.id)
+    .eq('projects.archived', false)
     .order('deployed_on', { ascending: false })
     .order('created_at', { ascending: false })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -259,8 +271,9 @@ export async function getTaskTimeline(ctx: AppContext, key: string): Promise<Tas
   if (!ids.length) return []
   const { data, error } = await ctx.supabase
     .from('deployments')
-    .select('id, code_version, environment, deployed_on, type, project_id, projects(name, jira_base_url)')
+    .select('id, code_version, environment, deployed_on, type, project_id, projects!inner(name, jira_base_url)')
     .eq('org_id', ctx.org.id)
+    .eq('projects.archived', false)
     .in('id', ids)
     .order('deployed_on')
     .order('created_at')

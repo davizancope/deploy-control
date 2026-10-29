@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { compareTaskKeys, listProjects } from '@/lib/data'
+import { compareTaskKeys, listProjects, projectIdsFilter } from '@/lib/data'
 import { formatDate, plural } from '@/lib/format'
 import { requireContext } from '@/lib/session'
 import { LinkForm } from './link-form'
@@ -16,7 +16,7 @@ export default async function LinkPage({ searchParams }: PageProps<'/vincular'>)
   const ctx = await requireContext()
   if (!ctx.canWrite) redirect('/')
   const sp = await searchParams
-  const projects = await listProjects(ctx, true)
+  const projects = await listProjects(ctx)
   const projectId = typeof sp.projeto === 'string' && projects.some((p) => p.id === sp.projeto) ? sp.projeto : ''
 
   let prQuery = ctx.supabase
@@ -36,6 +36,9 @@ export default async function LinkPage({ searchParams }: PageProps<'/vincular'>)
   if (projectId) {
     prQuery = prQuery.eq('project_id', projectId)
     commitQuery = commitQuery.eq('project_id', projectId)
+  } else {
+    prQuery = prQuery.in('project_id', projectIdsFilter(projects))
+    commitQuery = commitQuery.in('project_id', projectIdsFilter(projects))
   }
   const [{ data: prRows, error: e1 }, { data: commitRows, error: e2 }] = await Promise.all([prQuery, commitQuery])
   if (e1 || e2) throw new Error((e1 ?? e2)!.message)

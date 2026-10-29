@@ -47,6 +47,12 @@ export async function saveDeploy(_prev: FormState, formData: FormData): Promise<
   const projects = await listProjects(ctx, true)
   const project = projects.find((p) => p.id === f.project_id)
   if (!project) return { fieldErrors: { project_id: 'Projeto não encontrado.' } }
+  if (project.archived) {
+    const { data: current } = f.id
+      ? await ctx.supabase.from('deployments').select('project_id').eq('org_id', ctx.org.id).eq('id', f.id).maybeSingle()
+      : { data: null }
+    if (current?.project_id !== project.id) return { fieldErrors: { project_id: 'Esse projeto está arquivado. Reative-o para registrar deploys.' } }
+  }
 
   const fieldErrors: Record<string, string> = {}
   let rows: ChangeRow[] = []
