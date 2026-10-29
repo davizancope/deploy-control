@@ -31,12 +31,12 @@ export default async function ImportPage({ searchParams }: PageProps<'/importar'
       </header>
 
       {ok > 0 && (
-        <p role="status" className="mb-6 rounded-md border border-production/30 bg-production-soft px-3 py-2">
+        <p role="status" className="mb-6 rounded-xl border border-production/30 bg-production-soft px-3 py-2">
           {plural(ok, 'deploy importado', 'deploys importados')}.{dup > 0 ? ` ${plural(dup, 'já existia e foi pulado', 'já existiam e foram pulados')}.` : ''}
         </p>
       )}
       {sp.desfeito && (
-        <p role="status" className="mb-6 rounded-md border border-line bg-surface px-3 py-2">Importação desfeita. Os deploys dela foram removidos.</p>
+        <p role="status" className="mb-6 glass rounded-2xl px-4 py-2.5">Importação desfeita. Os deploys dela foram removidos.</p>
       )}
 
       <Importer projects={projects.map((p) => ({ id: p.id, name: p.name }))} canManage={ctx.canManage} />
@@ -44,7 +44,7 @@ export default async function ImportPage({ searchParams }: PageProps<'/importar'
       {(batches ?? []).length > 0 && (
         <section className="mt-12" aria-labelledby="hist">
           <h2 id="hist" className="mb-3 text-lg font-semibold">Importações feitas</h2>
-          <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
+          <ul className="divide-y divide-line glass rounded-2xl">
             {(batches as Batch[]).map((b) => (
               <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <span>
@@ -53,7 +53,7 @@ export default async function ImportPage({ searchParams }: PageProps<'/importar'
                 </span>
                 <details className="relative">
                   <summary className="btn list-none px-3 text-sm text-danger hover:bg-danger-soft [&::-webkit-details-marker]:hidden">Desfazer</summary>
-                  <form action={undoImport} className="absolute right-0 z-10 mt-2 w-72 rounded-lg border border-line bg-surface p-4 shadow-lg">
+                  <form action={undoImport} className="absolute right-0 z-10 mt-2 w-72 glass-pop rounded-2xl p-4">
                     <input type="hidden" name="id" value={b.id} />
                     <p className="mb-3 text-sm">Remove os {b.row_count} deploys desta importação. Os projetos continuam.</p>
                     <button type="submit" className="btn-danger w-full">Desfazer importação</button>

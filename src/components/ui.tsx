@@ -1,6 +1,7 @@
 'use client'
 
 import { useFormStatus } from 'react-dom'
+import { Icon } from '@/components/icons'
 import { ENVIRONMENT_LABEL, TYPE_LABEL, type DeployType, type Environment } from '@/lib/types'
 
 /**
@@ -50,13 +51,13 @@ export function FieldError({ message }: { message?: string }) {
 export function FormNotice({ error, message }: { error?: string; message?: string }) {
   if (error)
     return (
-      <p role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+      <p role="alert" className="rounded-xl border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
         {error}
       </p>
     )
   if (message)
     return (
-      <p role="status" className="rounded-md border border-production/30 bg-production-soft px-3 py-2 text-sm text-ink">
+      <p role="status" className="rounded-xl border border-production/30 bg-production-soft px-3 py-2 text-sm text-ink">
         {message}
       </p>
     )
@@ -65,47 +66,50 @@ export function FormNotice({ error, message }: { error?: string; message?: strin
 
 export { EnvBadge, TypeBadge }
 
+const ENV_TONE: Record<Environment, string> = {
+  staging: 'bg-staging-soft text-staging',
+  production: 'bg-production-soft text-production',
+}
+const TYPE_TONE: Record<DeployType, { chip: string; icon: string }> = {
+  release: { chip: 'bg-release-soft', icon: 'text-release' },
+  bugfix: { chip: 'bg-bugfix-soft', icon: 'text-bugfix' },
+  hotfix: { chip: 'bg-hotfix-soft', icon: 'text-hotfix' },
+}
+
 function EnvBadge({ env }: { env: Environment }) {
-  const prod = env === 'production'
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs font-semibold ${
-        prod ? 'bg-production-soft text-production' : 'bg-staging-soft text-staging'
-      }`}
-    >
-      <EnvMark env={env} />
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${ENV_TONE[env]}`}>
+      <Icon name={env} size={14} />
       {ENVIRONMENT_LABEL[env]}
     </span>
   )
 }
 
 /**
- * Marca gráfica do ambiente: círculo vazado para Staging, losango cheio para Produção.
+ * Ícone do ambiente: frasco para Staging, foguete para Produção; herda a cor do texto.
  * @param props.env Ambiente.
- * @returns SVG de 10px.
+ * @param props.size Lado em pixels.
+ * @returns SVG decorativo.
  */
-export function EnvMark({ env }: { env: Environment }) {
-  return env === 'production' ? (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-      <path d="M5 0.5 9.5 5 5 9.5 0.5 5z" fill="currentColor" />
-    </svg>
-  ) : (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-      <circle cx="5" cy="5" r="3.6" fill="none" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  )
+export function EnvMark({ env, size = 16 }: { env: Environment; size?: number }) {
+  return <Icon name={env} size={size} />
+}
+
+/**
+ * Ícone do tipo de deploy, na cor do tipo: pacote verde, inseto amarelo, chama vermelha.
+ * @param props.type Tipo do deploy.
+ * @param props.size Lado em pixels.
+ * @returns SVG decorativo.
+ */
+export function TypeMark({ type, size = 16 }: { type: DeployType; size?: number }) {
+  return <Icon name={type} size={size} className={TYPE_TONE[type].icon} />
 }
 
 function TypeBadge({ type }: { type: DeployType }) {
-  if (type === 'release') return <span className="text-xs text-muted">{TYPE_LABEL[type]}</span>
-  const hot = type === 'hotfix'
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold ${
-        hot ? 'bg-hotfix-soft text-hotfix' : 'bg-sunken text-ink-2'
-      }`}
-    >
-      {hot ? '⚑' : '•'} {TYPE_LABEL[type]}
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold text-ink ${TYPE_TONE[type].chip}`}>
+      <TypeMark type={type} size={14} />
+      {TYPE_LABEL[type]}
     </span>
   )
 }

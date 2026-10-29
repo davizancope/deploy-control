@@ -2,52 +2,90 @@
 @import '@fontsource-variable/schibsted-grotesk';
 @import '@fontsource-variable/jetbrains-mono';
 
-/* Paleta: grafite azulado sobre papel frio. Staging = azul, Produção = verde, Hotfix = âmbar. */
+/* Liquid glass: vidro sobre um campo de luz. Azul (staging) no canto de origem, verde (produção) no destino. */
 :root {
-  --paper: #f2f4f3;
-  --surface: #ffffff;
-  --sunken: #e8eceb;
-  --ink: #15232b;
-  --ink-2: #44545d;
-  --muted: #5d6d76;
-  --line: #d6dde0;
-  --line-strong: #b9c4c9;
-  --staging: #2a62a8;
-  --staging-soft: #e3ecf7;
-  --production: #0d7f57;
-  --production-soft: #ebf6f1;
-  --hotfix: #9a5a06;
-  --hotfix-soft: #fbeed8;
-  --danger: #b42318;
-  --danger-soft: #fde8e6;
-  --focus: #2a62a8;
+  --paper: #e6ecf6;
+  --surface: rgba(255, 255, 255, 0.56);
+  --lift: rgba(255, 255, 255, 0.86);
+  --pop: rgba(250, 252, 255, 0.9);
+  --sunken: rgba(70, 100, 150, 0.1);
+  --field: rgba(255, 255, 255, 0.62);
+  --ink: #0e1a2e;
+  --ink-2: #364761;
+  --muted: #526580;
+  --line: rgba(20, 45, 85, 0.1);
+  --line-strong: rgba(20, 45, 85, 0.24);
+  --staging: #0a64d8;
+  --staging-soft: rgba(10, 100, 216, 0.12);
+  --production: #077a43;
+  --production-soft: rgba(7, 122, 67, 0.12);
+  --release: #14a357;
+  --release-soft: rgba(20, 163, 87, 0.14);
+  --bugfix: #d99a00;
+  --bugfix-soft: rgba(245, 190, 20, 0.2);
+  --hotfix: #e0372b;
+  --hotfix-soft: rgba(255, 69, 58, 0.14);
+  --warn: #a35800;
+  --warn-soft: rgba(255, 159, 10, 0.18);
+  --danger: #c4251b;
+  --danger-soft: rgba(255, 69, 58, 0.12);
+  --focus: #0a64d8;
+  --glow-a: rgba(10, 132, 255, 0.55);
+  --glow-b: rgba(48, 209, 120, 0.5);
+  --glow-c: rgba(140, 100, 255, 0.34);
+  --glass-edge: rgba(255, 255, 255, 0.7);
+  --glass-hi: rgba(255, 255, 255, 0.95);
+  --glass-lo: rgba(255, 255, 255, 0.35);
+  --glass-shadow: rgba(30, 55, 100, 0.28);
+  --sheen-a: rgba(255, 255, 255, 0.5);
+  --sheen-b: rgba(255, 255, 255, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #10181d;
-    --surface: #172229;
-    --sunken: #0c1317;
-    --ink: #e6ecee;
-    --ink-2: #b4c1c7;
-    --muted: #8697a0;
-    --line: #26343c;
-    --line-strong: #3a4b55;
-    --staging: #5f97e0;
-    --staging-soft: #1a2d44;
-    --production: #35a87b;
-    --production-soft: #10291c;
-    --hotfix: #e0a54a;
-    --hotfix-soft: #3a2a10;
-    --danger: #f27d72;
-    --danger-soft: #3d1a17;
-    --focus: #5f97e0;
+    --paper: #060a14;
+    --surface: rgba(26, 36, 58, 0.5);
+    --lift: rgba(255, 255, 255, 0.14);
+    --pop: rgba(22, 30, 48, 0.92);
+    --sunken: rgba(255, 255, 255, 0.06);
+    --field: rgba(255, 255, 255, 0.07);
+    --ink: #eaf0fb;
+    --ink-2: #b8c5da;
+    --muted: #8e9db5;
+    --line: rgba(255, 255, 255, 0.1);
+    --line-strong: rgba(255, 255, 255, 0.22);
+    --staging: #58a6ff;
+    --staging-soft: rgba(88, 166, 255, 0.16);
+    --production: #38d98a;
+    --production-soft: rgba(56, 217, 138, 0.14);
+    --release: #3ddc84;
+    --release-soft: rgba(61, 220, 132, 0.15);
+    --bugfix: #ffd23f;
+    --bugfix-soft: rgba(255, 210, 63, 0.16);
+    --hotfix: #ff6b61;
+    --hotfix-soft: rgba(255, 107, 97, 0.16);
+    --warn: #ffb340;
+    --warn-soft: rgba(255, 179, 64, 0.16);
+    --danger: #ff7a70;
+    --danger-soft: rgba(255, 90, 80, 0.16);
+    --focus: #58a6ff;
+    --glow-a: rgba(10, 110, 255, 0.55);
+    --glow-b: rgba(30, 200, 120, 0.4);
+    --glow-c: rgba(130, 90, 255, 0.36);
+    --glass-edge: rgba(255, 255, 255, 0.14);
+    --glass-hi: rgba(255, 255, 255, 0.32);
+    --glass-lo: rgba(255, 255, 255, 0.07);
+    --glass-shadow: rgba(0, 0, 0, 0.6);
+    --sheen-a: rgba(255, 255, 255, 0.1);
+    --sheen-b: rgba(255, 255, 255, 0.02);
   }
 }
 
 @theme inline {
   --color-paper: var(--paper);
   --color-surface: var(--surface);
+  --color-lift: var(--lift);
+  --color-pop: var(--pop);
   --color-sunken: var(--sunken);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
@@ -58,8 +96,14 @@
   --color-staging-soft: var(--staging-soft);
   --color-production: var(--production);
   --color-production-soft: var(--production-soft);
+  --color-release: var(--release);
+  --color-release-soft: var(--release-soft);
+  --color-bugfix: var(--bugfix);
+  --color-bugfix-soft: var(--bugfix-soft);
   --color-hotfix: var(--hotfix);
   --color-hotfix-soft: var(--hotfix-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --font-sans: 'Schibsted Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
@@ -77,6 +121,28 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Campo de luz fixo que o vidro refrata. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(64rem 46rem at 2% -10%, var(--glow-a), transparent 62%),
+    radial-gradient(60rem 44rem at 104% 110%, var(--glow-b), transparent 60%),
+    radial-gradient(34rem 26rem at 88% 2%, var(--glow-c), transparent 62%);
+}
+
+h1,
+h2 {
+  letter-spacing: -0.022em;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--staging) 30%, transparent);
+}
+
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
@@ -91,31 +157,104 @@ body {
   }
 }
 
+/* Painel de vidro: desfoque, borda de luz no topo e na esquerda, sombra longa. */
+@utility glass {
+  background-color: var(--surface);
+  background-image: linear-gradient(155deg, var(--sheen-a), transparent 40%, var(--sheen-b));
+  -webkit-backdrop-filter: blur(28px) saturate(175%);
+  backdrop-filter: blur(28px) saturate(175%);
+  border: 1px solid var(--glass-edge);
+  box-shadow:
+    inset 1.5px 1.5px 0 -0.5px var(--glass-hi),
+    inset -1px -1px 0 -0.5px var(--glass-lo),
+    0 1px 2px rgba(10, 25, 50, 0.06),
+    0 18px 44px -20px var(--glass-shadow);
+}
+/* Vidro mais denso para popovers e dicas, onde o texto de trás não pode vazar. */
+@utility glass-pop {
+  background-color: var(--pop);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid var(--glass-edge);
+  box-shadow:
+    inset 1.5px 1.5px 0 -0.5px var(--glass-hi),
+    0 24px 56px -16px var(--glass-shadow);
+}
+/* Elemento erguido dentro de um painel (item ativo, opção marcada). */
+@utility lift {
+  background-color: var(--lift);
+  box-shadow:
+    inset 0 1px 0 var(--glass-hi),
+    0 6px 16px -8px var(--glass-shadow);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass {
+    background-color: var(--pop);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background-color: var(--pop);
+    background-image: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  body::before {
+    opacity: 0.5;
+  }
+}
+
 @utility field {
-  @apply w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-muted;
-  &:focus {
-    @apply border-staging outline-none;
+  @apply w-full rounded-xl px-3.5 py-2 text-[15px] text-ink placeholder:text-muted;
+  background-color: var(--field);
+  border: 1px solid var(--line-strong);
+  box-shadow: inset 0 1px 2px rgba(10, 25, 50, 0.08);
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    border-color: var(--staging);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--staging) 20%, transparent);
   }
+}
+/* Select com seta própria, alinhada aos demais campos. */
+select.field {
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%238e9db5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1.5 1.75 6 6.25l4.5-4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
 }
 @utility label {
   @apply mb-1.5 block text-sm font-medium text-ink-2;
 }
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-[15px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-[15px] font-medium transition-[background-color,box-shadow,filter,transform] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
 }
 @utility btn-primary {
-  @apply btn bg-ink text-paper hover:bg-ink-2;
+  @apply btn bg-ink text-paper hover:brightness-110;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 8px 20px -8px color-mix(in srgb, var(--ink) 60%, transparent);
+    cursor: pointer;
 }
 @utility btn-quiet {
-  @apply btn border border-line-strong bg-surface text-ink hover:bg-sunken;
+  @apply btn text-ink hover:bg-lift;
+  background-color: var(--field);
+  border: 1px solid var(--line-strong);
+  box-shadow: inset 0 1px 0 var(--glass-hi);
 }
 @utility btn-danger {
-  @apply btn border border-danger/40 bg-surface text-danger hover:bg-danger-soft;
+  @apply btn border border-danger/40 text-danger hover:bg-danger-soft;
+  background-color: var(--field);
 }
 @utility link {
   @apply text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink;
 }
 @utility code {
   @apply font-mono text-[0.92em] tracking-tight;
+}
+
+.text-sm {
+  cursor: pointer;
 }

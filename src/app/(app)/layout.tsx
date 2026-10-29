@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BrandMark } from '@/components/icons'
 import { signOut } from '@/app/(auth)/actions'
 import { requireContext } from '@/lib/session'
 import { ROLE_LABEL } from '@/lib/types'
@@ -13,16 +14,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ])
   const pendingLinks = (prs.count ?? 0) + (commits.count ?? 0)
   return (
-    <div className="md:grid md:min-h-dvh md:grid-cols-[232px_1fr]">
-      <aside className="flex flex-col gap-4 border-b border-line bg-surface px-4 py-4 md:sticky md:top-0 md:h-dvh md:border-r md:border-b-0 md:py-6">
+    <div className="md:grid md:min-h-dvh md:grid-cols-[256px_1fr]">
+      <aside className="glass m-3 flex flex-col gap-4 rounded-3xl px-4 py-4 md:sticky md:top-3 md:h-[calc(100dvh-1.5rem)] md:py-5">
         <div className="flex items-center gap-2">
           <Link href="/" aria-label="Painel" className="shrink-0">
-            <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
-              <rect width="32" height="32" rx="7" className="fill-ink" />
-              <path d="M6 21h20" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" />
-              <circle cx="11" cy="21" r="3" fill="var(--paper)" stroke="var(--staging)" strokeWidth="2" />
-              <path d="M21 15.5l4.5 5.5-4.5 5.5-4.5-5.5z" fill="var(--production)" />
-            </svg>
+            <BrandMark size={30} />
           </Link>
           <div className="min-w-0 flex-1">
             <OrgSwitcher orgs={ctx.orgs} activeId={ctx.org.id} />
@@ -42,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </aside>
-      <main className="min-w-0 px-4 py-6 md:px-10 md:py-8">
+      <main className="min-w-0 px-4 py-4 md:px-8 md:py-8">
         <div className="mx-auto max-w-[1180px]">{children}</div>
       </main>
     </div>

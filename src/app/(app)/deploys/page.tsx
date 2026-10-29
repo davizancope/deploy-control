@@ -47,7 +47,7 @@ export default async function DeploysPage({ searchParams }: PageProps<'/deploys'
         {ctx.canWrite && <Link href="/deploys/novo" className="btn-primary">Registrar deploy</Link>}
       </header>
 
-      <form className="mb-8 grid gap-3 rounded-lg border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1.2fr_1fr_1fr_1fr_1fr_auto]" role="search">
+      <form className="mb-8 grid gap-3 glass rounded-2xl p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1.2fr_1fr_1fr_1fr_1fr_auto]" role="search">
         <div>
           <label className="label" htmlFor="q">Code version, branch ou task</label>
           <input className="field code" id="q" name="q" defaultValue={filters.q} placeholder="release_4_2 ou ABC-123" />
@@ -91,7 +91,7 @@ export default async function DeploysPage({ searchParams }: PageProps<'/deploys'
       </form>
 
       {items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-line-strong px-6 py-12 text-center">
+        <div className="rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center">
           {filtered ? (
             <p className="text-ink-2">Nenhum deploy com esses filtros. <Link href="/deploys" className="link">Limpar filtros</Link></p>
           ) : (
@@ -112,23 +112,23 @@ export default async function DeploysPage({ searchParams }: PageProps<'/deploys'
                 <span className="font-semibold text-ink first-letter:uppercase">{formatDayHeading(day)}</span>
                 <span>{plural(list.length, 'deploy', 'deploys')}</span>
               </h2>
-              <ol className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+              <ol className="divide-y divide-line overflow-hidden glass rounded-2xl">
                 {list.map((d) => (
                   <li key={d.id}>
                     <Link
                       href={`/deploys/${d.id}`}
                       className="grid grid-cols-[20px_1fr_auto] items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-sunken sm:grid-cols-[20px_minmax(0,2.2fr)_minmax(0,1fr)_110px_120px]"
                     >
-                      <span className={d.environment === 'production' ? 'text-production' : 'text-staging'} title={d.environment === 'production' ? 'Produção' : 'Staging'}>
+                      <span className={`col-start-1 row-start-1 sm:col-start-auto sm:row-start-auto ${d.environment === 'production' ? 'text-production' : 'text-staging'}`} title={d.environment === 'production' ? 'Produção' : 'Staging'}>
                         <EnvMark env={d.environment} />
                         <span className="sr-only">{d.environment === 'production' ? 'Produção' : 'Staging'}</span>
                       </span>
-                      <span className="min-w-0">
+                      <span className="col-start-2 row-start-1 min-w-0 sm:col-start-auto sm:row-start-auto">
                         <span className="code block truncate font-medium">{d.code_version}</span>
                         <span className="code block truncate text-sm text-muted">{d.branch ?? '—'}</span>
                       </span>
-                      <span className="col-start-2 truncate text-sm text-ink-2 sm:col-start-auto">{d.project_name}{d.sprint ? `, sprint ${d.sprint}` : ''}</span>
-                      <span className="row-start-1 justify-self-end sm:row-start-auto sm:justify-self-start"><TypeBadge type={d.type} /></span>
+                      <span className="col-start-2 row-start-2 min-w-0 truncate text-sm text-ink-2 sm:col-start-auto sm:row-start-auto">{d.project_name}{d.sprint ? `, sprint ${d.sprint}` : ''}</span>
+                      <span className="col-start-3 row-start-1 justify-self-end sm:col-start-auto sm:row-start-auto sm:justify-self-start"><TypeBadge type={d.type} /></span>
                       <span className="col-start-3 row-start-2 justify-self-end text-sm text-muted sm:col-start-auto sm:row-start-auto">
                         {plural(d.task_count, 'task', 'tasks')}, {d.pr_count} PR
                       </span>

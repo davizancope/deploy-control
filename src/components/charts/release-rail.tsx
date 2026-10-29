@@ -22,7 +22,7 @@ export function ReleaseRail({ lanes, from, to }: { lanes: Lane[]; from: string; 
   for (let d = from.slice(0, 8) + '01'; d <= to; d = addDays(d, 32).slice(0, 8) + '01') if (d >= from) months.push(d)
 
   return (
-    <figure className="rounded-lg border border-line bg-surface">
+    <figure className="glass rounded-2xl">
       <figcaption className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
         <span className="font-semibold">Trilho de releases</span>
         <span className="flex flex-wrap items-center gap-4 text-sm text-ink-2">
@@ -46,7 +46,7 @@ export function ReleaseRail({ lanes, from, to }: { lanes: Lane[]; from: string; 
               <Link href={`/deploys?projeto=${lane.project_id}`} className="truncate text-sm font-medium hover:underline" title={lane.project_name}>
                 {lane.project_name}
               </Link>
-              <div className="relative h-14 rounded-md bg-sunken/60">
+              <div className="relative h-14 rounded-xl bg-sunken/60">
                 {months.map((m) => (
                   <span key={m} aria-hidden="true" className="absolute inset-y-0 w-px bg-line" style={{ left: pos(m) }} />
                 ))}
@@ -100,7 +100,7 @@ function Marker({ group: g, left, projectId }: { group: Group; left: string; pro
       </svg>
       <span
         role="tooltip"
-        className="pointer-events-none invisible absolute bottom-full left-1/2 z-30 mb-1 w-max max-w-64 -translate-x-1/2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-left text-xs text-ink shadow-md group-hover:visible group-focus-visible:visible"
+        className="pointer-events-none invisible absolute bottom-full left-1/2 z-30 mb-1 w-max max-w-64 -translate-x-1/2 glass-pop rounded-xl px-2.5 py-1.5 text-left text-xs text-ink shadow-md group-hover:visible group-focus-visible:visible"
       >
         <span className="block text-ink-2">
           {g.deploys.length > 1 ? `${g.deploys.length} deploys em ` : ''}

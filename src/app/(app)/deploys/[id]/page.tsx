@@ -48,7 +48,7 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
   return (
     <article>
       {sp.salvo && (
-        <p role="status" className="mb-6 rounded-md border border-production/30 bg-production-soft px-3 py-2 text-sm">Deploy salvo.</p>
+        <p role="status" className="mb-6 rounded-xl border border-production/30 bg-production-soft px-3 py-2 text-sm">Deploy salvo.</p>
       )}
 
       <header className="mb-8 border-b border-line pb-6">
@@ -82,7 +82,7 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
             <Link href={`/deploys/${d.id}/editar`} className="btn-quiet">Editar</Link>
             <details className="relative">
               <summary className="btn list-none px-3 text-danger hover:bg-danger-soft [&::-webkit-details-marker]:hidden">Excluir</summary>
-              <form action={deleteDeploy} className="absolute z-10 mt-2 w-72 rounded-lg border border-line bg-surface p-4 shadow-lg">
+              <form action={deleteDeploy} className="absolute z-10 mt-2 w-72 glass-pop rounded-2xl p-4">
                 <input type="hidden" name="id" value={d.id} />
                 <p className="mb-3 text-sm">Excluir <span className="code">{d.code_version}</span> e as tasks, PRs e commits ligados a ele?</p>
                 <button type="submit" className="btn-danger w-full">Excluir deploy</button>
@@ -102,7 +102,7 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
             {d.tasks.length === 0 ? (
               <p className="text-ink-2">Nenhuma task ligada a este deploy.</p>
             ) : (
-              <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
+              <ul className="divide-y divide-line glass rounded-2xl">
                 {d.tasks.map((key) => {
                   const s = summaries.get(key)
                   const refs = [...d.pull_requests.filter((p) => p.tasks.includes(key)), ...d.commits.filter((c) => c.tasks.includes(key))]
@@ -134,7 +134,7 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
           {noTask.length > 0 && (
             <div>
               <h2 className="mb-3 text-lg font-semibold">Sem task</h2>
-              <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
+              <ul className="divide-y divide-line glass rounded-2xl">
                 {noTask.map((r) => (
                   <li key={'url' in r ? r.url : r.sha} className="flex flex-wrap items-center gap-3 px-4 py-3">
                     <RefChip item={r} />
@@ -146,7 +146,7 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
           )}
 
           {pending.length > 0 && (
-            <div className="rounded-lg border border-hotfix/40 bg-hotfix-soft px-4 py-3">
+            <div className="rounded-2xl border border-warn/40 bg-warn-soft px-4 py-3">
               <h2 className="font-semibold">A vincular</h2>
               <p className="mb-3 text-sm text-ink-2">Não deu para saber de que task são estes PRs ou commits.</p>
               <ul className="mb-3 flex flex-wrap gap-2">
@@ -212,7 +212,7 @@ function TaskStatus({ s }: { s: TaskSummary }) {
     )
   }
   return (
-    <span className={`text-sm ${rework ? 'text-hotfix' : 'text-ink-2'}`}>
+    <span className={`text-sm ${rework ? 'text-warn' : 'text-ink-2'}`}>
       {plural(s.staging_deploys, 'deploy', 'deploys')} em staging, ainda não foi para produção
     </span>
   )
@@ -221,13 +221,13 @@ function TaskStatus({ s }: { s: TaskSummary }) {
 function RefChip({ item }: { item: DeployDetail['pull_requests'][number] | DeployDetail['commits'][number] }) {
   if ('url' in item) {
     return (
-      <a href={item.url} target="_blank" rel="noopener noreferrer" className="code inline-block rounded-md border border-line bg-surface px-2 py-0.5 text-sm hover:border-ink" title={item.description ?? undefined}>
+      <a href={item.url} target="_blank" rel="noopener noreferrer" className="code inline-block rounded-xl border border-line bg-lift px-2 py-0.5 text-sm hover:border-ink" title={item.description ?? undefined}>
         PR {item.number ? `#${item.number}` : item.url}
       </a>
     )
   }
   return (
-    <span className="code inline-block rounded-md border border-dashed border-line-strong px-2 py-0.5 text-sm" title={item.description ?? undefined}>
+    <span className="code inline-block rounded-xl border border-dashed border-line-strong px-2 py-0.5 text-sm" title={item.description ?? undefined}>
       {item.cherry_pick ? 'cherry-pick ' : 'commit '}
       {item.sha.slice(0, 7)}
     </span>

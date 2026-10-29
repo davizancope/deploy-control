@@ -11,7 +11,7 @@ export function WeeklyBars({ weeks }: { weeks: WeekBucket[] }) {
   const labelEvery = weeks.length > 16 ? 4 : weeks.length > 8 ? 2 : 1
 
   return (
-    <figure className="rounded-lg border border-line bg-surface">
+    <figure className="glass rounded-2xl">
       <figcaption className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
         <span className="font-semibold">Deploys por semana</span>
         <span className="flex items-center gap-4 text-sm text-ink-2">
@@ -22,7 +22,7 @@ export function WeeklyBars({ weeks }: { weeks: WeekBucket[] }) {
       <div className="px-5 pt-4 pb-3">
         <div className="relative h-44" aria-hidden="true">
           <span className="absolute inset-x-0 top-0 border-t border-dashed border-line" />
-          <span className="absolute top-0 -translate-y-1/2 bg-surface pr-1 text-xs text-muted">{max}</span>
+          <span className="absolute top-0 -translate-y-1/2 pr-1 text-xs text-muted">{max}</span>
           <span className="absolute inset-x-0 bottom-0 border-t border-line-strong" />
           <div className="absolute inset-0 flex items-end gap-[3px] pl-6">
             {weeks.map((w) => {
@@ -35,7 +35,7 @@ export function WeeklyBars({ weeks }: { weeks: WeekBucket[] }) {
                     <span className={`block bg-production ${w.staging ? '' : 'rounded-t-[4px]'}`} style={{ height: `${(w.production / max) * 100}%` }} />
                   )}
                   <span className="absolute inset-0 rounded-sm group-hover:bg-ink/5" />
-                  <span className="pointer-events-none invisible absolute bottom-full left-1/2 z-10 mb-1 w-max -translate-x-1/2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-xs shadow-md group-hover:visible">
+                  <span className="pointer-events-none invisible absolute bottom-full left-1/2 z-10 mb-1 w-max -translate-x-1/2 glass-pop rounded-xl px-2.5 py-1.5 text-xs shadow-md group-hover:visible">
                     <span className="block font-semibold">Semana de {formatDate(w.week, false)}</span>
                     <span className="block text-ink-2">{w.staging} staging, {w.production} produção{w.hotfix ? ` (${w.hotfix} hotfix)` : ''}</span>
                     {total === 0 && <span className="block text-muted">Sem deploys</span>}

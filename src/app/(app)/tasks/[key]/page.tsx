@@ -39,7 +39,7 @@ export default async function TaskPage({ params }: PageProps<'/tasks/[key]'>) {
         <p className="text-ink-2">Nenhum deploy registrado com essa task.</p>
       ) : (
         <>
-          <dl className="mb-10 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
+          <dl className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Deploys em staging" value={String(staging.length)} />
             <Stat label="Deploys em produção" value={String(production.length)} />
             <Stat label="Primeiro staging" value={firstStaging ? formatDate(firstStaging) : '—'} />
@@ -53,10 +53,8 @@ export default async function TaskPage({ params }: PageProps<'/tasks/[key]'>) {
           <ol className="relative ml-2 border-l-2 border-line">
             {timeline.map((t) => (
               <li key={t.id} className="relative pb-6 pl-6 last:pb-0">
-                <span className={`absolute top-1 -left-[7px] rounded-full bg-paper ${t.environment === 'production' ? 'text-production' : 'text-staging'}`}>
-                  <svg width="12" height="12" viewBox="0 0 10 10" aria-hidden="true">
-                    {t.environment === 'production' ? <path d="M5 0.5 9.5 5 5 9.5 0.5 5z" fill="currentColor" /> : <circle cx="5" cy="5" r="3.6" fill="var(--paper)" stroke="currentColor" strokeWidth="1.8" />}
-                  </svg>
+                <span className={`absolute top-0.5 -left-[11px] rounded-full bg-pop p-0.5 ${t.environment === 'production' ? 'text-production' : 'text-staging'}`}>
+                  <EnvMark env={t.environment} size={16} />
                 </span>
                 <p className="text-sm text-ink-2">{formatDate(t.deployed_on)}, {t.project_name}</p>
                 <p className="flex flex-wrap items-center gap-2">
@@ -78,7 +76,7 @@ export default async function TaskPage({ params }: PageProps<'/tasks/[key]'>) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-surface px-4 py-3">
+    <div className="glass rounded-2xl px-4 py-3">
       <dt className="text-sm text-ink-2">{label}</dt>
       <dd className="mt-1 text-xl font-semibold tracking-tight">{value}</dd>
     </div>

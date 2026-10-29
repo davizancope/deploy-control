@@ -36,12 +36,12 @@ export function DashboardView({ ins, projects, projectId, period, periods: PERIO
             <option value="">Todos os projetos</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </AutoSubmitSelect>
-          <fieldset className="flex rounded-md border border-line-strong bg-surface p-0.5">
+          <fieldset className="flex rounded-full border border-line-strong bg-sunken p-0.5">
             <legend className="sr-only">Período</legend>
             {PERIODS.map((p) => (
               <label key={p.value}>
                 <input type="radio" name="periodo" value={p.value} defaultChecked={p.value === period} className="peer sr-only" />
-                <span className="block cursor-pointer rounded px-3 py-1 text-sm text-ink-2 peer-checked:bg-ink peer-checked:text-paper peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--focus)]">{p.label}</span>
+                <span className="block cursor-pointer rounded-full px-3.5 py-1 text-sm text-ink-2 peer-checked:lift peer-checked:text-ink peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--focus)]">{p.label}</span>
               </label>
             ))}
           </fieldset>
@@ -49,7 +49,7 @@ export function DashboardView({ ins, projects, projectId, period, periods: PERIO
         </form>
       </header>
 
-      <dl className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-3 xl:grid-cols-6">
+      <dl className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi label="Deploys em produção" value={ins.production.toLocaleString('pt-BR')} note={plural(ins.staging, 'em staging', 'em staging')} />
         <Kpi
           label="Hotfix em produção"
@@ -81,7 +81,7 @@ export function DashboardView({ ins, projects, projectId, period, periods: PERIO
         {ins.lanes.length > 0 ? (
           <ReleaseRail lanes={ins.lanes} from={from} to={to} />
         ) : (
-          <p className="rounded-lg border border-dashed border-line-strong px-6 py-10 text-center text-ink-2">Nenhum deploy neste período.</p>
+          <p className="rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center text-ink-2">Nenhum deploy neste período.</p>
         )}
 
         <div className="grid items-start gap-8 lg:grid-cols-2">
@@ -126,7 +126,7 @@ export function DashboardView({ ins, projects, projectId, period, periods: PERIO
             }))}
             more={ins.rework.length > 8 ? ins.rework.length - 8 : 0}
           />
-          <section className="rounded-lg border border-line bg-surface">
+          <section className="glass rounded-2xl">
             <h2 className="border-b border-line px-5 py-3 font-semibold">Últimas em produção</h2>
             {ins.latestProduction.length === 0 ? (
               <p className="px-5 py-6 text-ink-2">Nada foi para produção neste período.</p>
@@ -155,9 +155,9 @@ export function DashboardView({ ins, projects, projectId, period, periods: PERIO
 
 function Kpi({ label, value, note, tone, href }: { label: string; value: string; note: string; tone?: 'warn'; href?: string }) {
   return (
-    <div className="bg-surface px-4 py-4">
+    <div className="glass rounded-2xl px-4 py-4">
       <dt className="text-sm text-ink-2">{label}</dt>
-      <dd className={`mt-1 text-[26px] leading-tight font-semibold tracking-tight tabular-nums ${tone === 'warn' ? 'text-hotfix' : ''}`}>{value}</dd>
+      <dd className={`mt-1 text-[26px] leading-tight font-semibold tracking-tight tabular-nums ${tone === 'warn' ? 'text-warn' : ''}`}>{value}</dd>
       <dd className="text-sm text-muted">{href ? <Link href={href} className="link text-muted">{note}</Link> : note}</dd>
     </div>
   )
@@ -175,7 +175,7 @@ function TaskTable({
   more: number
 }) {
   return (
-    <section className="rounded-lg border border-line bg-surface">
+    <section className="glass rounded-2xl">
       <h2 className="border-b border-line px-5 py-3 font-semibold">{title}</h2>
       {rows.length === 0 ? (
         <p className="px-5 py-6 text-ink-2">{empty}</p>

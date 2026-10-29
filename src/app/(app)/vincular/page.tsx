@@ -92,7 +92,7 @@ export default async function LinkPage({ searchParams }: PageProps<'/vincular'>)
       </form>
 
       {items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-line-strong px-6 py-12 text-center">
+        <div className="rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center">
           <p className="text-ink-2">Tudo vinculado. Todo PR e commit tem task ou está marcado como sem task.</p>
           <Link href="/deploys" className="link mt-2 inline-block">Ver deploys</Link>
         </div>
@@ -104,7 +104,7 @@ export default async function LinkPage({ searchParams }: PageProps<'/vincular'>)
               const deploys = (deploysOf.get(item.id) ?? []).sort((a, b) => a.deployed_on.localeCompare(b.deployed_on))
               const candidates = [...new Set(deploys.flatMap((d) => d.deployment_tasks.map((t) => t.task_key)))].sort(compareTaskKeys)
               return (
-                <li key={item.id} className="rounded-lg border border-line bg-surface p-5">
+                <li key={item.id} className="glass rounded-2xl p-5">
                   <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                     <span className="flex items-baseline gap-3">
                       {item.href ? (

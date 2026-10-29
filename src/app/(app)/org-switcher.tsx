@@ -14,7 +14,7 @@ export function OrgSwitcher({ orgs, activeId }: { orgs: OrgSummary[]; activeId: 
         name="org"
         defaultValue={activeId}
         onChange={() => formRef.current?.requestSubmit()}
-        className="w-full cursor-pointer appearance-none rounded-md border border-transparent bg-transparent py-1 pr-6 text-base font-semibold tracking-tight hover:border-line"
+        className="w-full cursor-pointer appearance-none rounded-xl border border-transparent bg-transparent py-1 pr-6 text-base font-semibold tracking-tight hover:border-line"
       >
         {orgs.map((o) => (
           <option key={o.id} value={o.id}>{o.name}</option>

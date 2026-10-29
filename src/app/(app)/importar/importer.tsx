@@ -50,7 +50,7 @@ export function Importer({ projects, canManage }: { projects: ProjectOption[]; c
 
   return (
     <div className="space-y-8">
-      <form onSubmit={onUpload} className="rounded-lg border border-line bg-surface p-5">
+      <form onSubmit={onUpload} className="glass rounded-2xl p-5">
         <FormNotice error={preview.error} />
         <label className="label mt-1" htmlFor="file">Arquivo da planilha (.xlsx ou .csv)</label>
         <div className="flex flex-wrap items-center gap-3">
@@ -77,7 +77,7 @@ export function Importer({ projects, canManage }: { projects: ProjectOption[]; c
               />
             ))}
           </ul>
-          <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-4 border-t border-line bg-paper/95 px-4 py-4 backdrop-blur md:-mx-0 md:px-0">
+          <div className="glass sticky bottom-3 flex flex-wrap items-center gap-4 rounded-2xl px-5 py-3">
             <SubmitButton busy={committing} pending="Importando…">
               {`Importar ${plural(totalRows, 'deploy', 'deploys')}`}
             </SubmitButton>
@@ -112,7 +112,7 @@ function SheetPreview({
   const dates = s.deploys.map((d) => d.deployed_on).sort()
 
   return (
-    <li className={`rounded-lg border bg-surface p-5 ${usable && target !== 'skip' ? 'border-line-strong' : 'border-line opacity-70'}`}>
+    <li className={`glass rounded-2xl p-5 ${usable && target !== 'skip' ? '' : 'opacity-70'}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold">Aba {s.sheetName}</h3>
@@ -140,7 +140,7 @@ function SheetPreview({
       {usable && (s.inferredYearCount > 0 || s.swappedDateCount > 0 || s.unlinkedCount > 0 || s.skipped.length > 0 || withWarnings.length > 0) && (
         <div className="mt-4 space-y-2 text-sm">
           {s.unlinkedCount > 0 && (
-            <p className="text-hotfix">
+            <p className="text-warn">
               {plural(s.unlinkedCount, 'PR ou commit ficou', 'PRs ou commits ficaram')} sem task definida (linhas com quantidades diferentes de tasks e PRs). Depois da importação, ligue em Vincular PRs.
             </p>
           )}
@@ -156,7 +156,7 @@ function SheetPreview({
           )}
           {s.skipped.length > 0 && (
             <details>
-              <summary className="cursor-pointer text-hotfix">{plural(s.skipped.length, 'linha ignorada', 'linhas ignoradas')}</summary>
+              <summary className="cursor-pointer text-warn">{plural(s.skipped.length, 'linha ignorada', 'linhas ignoradas')}</summary>
               <ul className="mt-2 space-y-1 pl-4 text-ink-2">
                 {s.skipped.map((r) => <li key={r.sourceRow}>Linha {r.sourceRow}: {r.reason}</li>)}
               </ul>
@@ -164,7 +164,7 @@ function SheetPreview({
           )}
           {withWarnings.length > 0 && (
             <details>
-              <summary className="cursor-pointer text-hotfix">{plural(withWarnings.length, 'linha para conferir', 'linhas para conferir')}</summary>
+              <summary className="cursor-pointer text-warn">{plural(withWarnings.length, 'linha para conferir', 'linhas para conferir')}</summary>
               <ul className="mt-2 space-y-1 pl-4 text-ink-2">
                 {withWarnings.map((d) => (
                   <li key={d.sourceRow}>
