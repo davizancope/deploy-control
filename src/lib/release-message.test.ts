@@ -44,16 +44,44 @@ describe('commitUrl', () => {
   })
 })
 
+describe('messageVars com PRs e commits sem task', () => {
+  const base = { ...SAMPLE_DEPLOY, project: { name: 'P', jira_base_url: 'https://x.atlassian.net', repo_url: 'https://bitbucket.org/emp/repo' } }
+  const repo = 'https://bitbucket.org/emp/repo'
+  const noTaskPr = (number: number, description: string | null) => ({ url: `${repo}/pull-requests/${number}`, number, description, tasks: [], no_task: true })
+
+  it('lista as tasks e depois os PRs sem task, com a descrição e o link', () => {
+    const v = messageVars({
+      ...base,
+      tasks: ['WW-183', 'WW-185'],
+      pull_requests: [{ url: `${repo}/pull-requests/986`, number: 986, description: null, tasks: ['WW-183'], no_task: false }, noTaskPr(988, 'Reports & Dashboard fix'), noTaskPr(990, 'OMS Sync')],
+    })
+    expect(v.tarefas).toBe(
+      `- [WW-183](https://x.atlassian.net/browse/WW-183)\n- [WW-185](https://x.atlassian.net/browse/WW-185)\n- Reports & Dashboard fix ([PR #988](${repo}/pull-requests/988))\n- OMS Sync ([PR #990](${repo}/pull-requests/990))`,
+    )
+    expect(v.tarefas_urls).toBe(`- https://x.atlassian.net/browse/WW-183\n- https://x.atlassian.net/browse/WW-185\n- ${repo}/pull-requests/988\n- ${repo}/pull-requests/990`)
+  })
+
+  it('sem tasks, só os PRs e commits sem task, cada um com a própria descrição', () => {
+    const v = messageVars({ ...base, tasks: [], pull_requests: [noTaskPr(988, 'Reports')], commits: [{ sha: 'abc1234def5678', description: null, tasks: [], no_task: true }] })
+    expect(v.tarefas).toBe(`- Reports ([PR #988](${repo}/pull-requests/988))\n- [commit abc1234](${repo}/commits/abc1234def5678)`)
+  })
+
+  it('PR a vincular (sem task e sem marca de sem task) não entra como item', () => {
+    const pending = { url: `${repo}/pull-requests/5`, number: 5, description: null, tasks: [], no_task: false }
+    expect(messageVars({ ...base, tasks: ['WW-1'], pull_requests: [pending] }).tarefas).toBe('- [WW-1](https://x.atlassian.net/browse/WW-1)')
+  })
+})
+
 describe('messageVars sem task', () => {
   const noTask = {
     ...SAMPLE_DEPLOY,
     tasks: [],
     project: { name: 'P', jira_base_url: 'https://x.atlassian.net', repo_url: 'https://bitbucket.org/emp/repo' },
   }
-  const pr = { url: 'https://bitbucket.org/emp/repo/pull-requests/12', number: 12, description: 'Ajuste de CSS' }
-  const commit = { sha: 'abc1234def5678', description: null }
+  const pr = { url: 'https://bitbucket.org/emp/repo/pull-requests/12', number: 12, description: 'Ajuste de CSS', tasks: [], no_task: false }
+  const commit = { sha: 'abc1234def5678', description: null, tasks: [], no_task: false }
 
-  it('usa as observações e linka o PR ou commit', () => {
+  it('sem PR ou commit marcado como sem task, usa as observações e linka o PR ou commit', () => {
     const v = messageVars({ ...noTask, notes: 'Correção do banner', pull_requests: [pr], commits: [commit] })
     expect(v.tarefas).toBe('- Correção do banner ([PR #12](https://bitbucket.org/emp/repo/pull-requests/12), [commit abc1234](https://bitbucket.org/emp/repo/commits/abc1234def5678))')
     expect(v.tarefas_urls).toBe('- https://bitbucket.org/emp/repo/pull-requests/12\n- https://bitbucket.org/emp/repo/commits/abc1234def5678')
