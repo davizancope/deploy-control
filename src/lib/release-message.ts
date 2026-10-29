@@ -20,8 +20,8 @@ export const MESSAGE_PLACEHOLDERS = [
   { key: 'data', description: 'Data do deploy, como 21 out 2026' },
   { key: 'sprint', description: 'Sprint do deploy' },
   { key: 'branch', description: 'Branch base do deploy' },
-  { key: 'tarefas', description: 'Uma task por linha, cada uma com link do Jira; sem task, as observações do deploy com o link do PR ou commit' },
-  { key: 'tarefas_urls', description: 'Uma task por linha, só a URL do Jira; sem task, só as URLs dos PRs e commits' },
+  { key: 'tarefas', description: 'Uma task por linha, cada uma com link do Jira' },
+  { key: 'tarefas_urls', description: 'Uma task por linha, só a URL do Jira' },
 ] as const
 
 export type PlaceholderKey = (typeof MESSAGE_PLACEHOLDERS)[number]['key']
@@ -36,10 +36,7 @@ export type MessageDeploy = {
   sprint: string | null
   branch: string | null
   tasks: string[]
-  notes: string | null
-  pull_requests: Array<{ url: string; number: number | null; description: string | null }>
-  commits: Array<{ sha: string; description: string | null }>
-  project: { name: string; jira_base_url: string | null; repo_url: string | null }
+  project: { name: string; jira_base_url: string | null }
 }
 
 /** Deploy fictício para a prévia da página de configuração. */
@@ -51,10 +48,7 @@ export const SAMPLE_DEPLOY: MessageDeploy = {
   sprint: 'Sprint 42',
   branch: 'release/2026-10-21',
   tasks: ['ABC-101', 'ABC-102'],
-  notes: null,
-  pull_requests: [],
-  commits: [],
-  project: { name: 'Projeto Exemplo', jira_base_url: 'https://empresa.atlassian.net', repo_url: null },
+  project: { name: 'Projeto Exemplo', jira_base_url: 'https://empresa.atlassian.net' },
 }
 
 const PLACEHOLDER = /\{\{\s*([a-z_]+)\s*\}\}/gi
@@ -68,64 +62,6 @@ const NO_TASKS = '- Nenhuma task vinculada'
  */
 export function taskUrls(tasks: string[], jiraBaseUrl: string | null): string[] {
   return tasks.map((key) => (jiraBaseUrl ? `${jiraBaseUrl}/browse/${key}` : key))
-}
-
-/** PR ou commit do deploy, com o link quando dá para montá-lo. */
-type ChangeRef = { label: string; url: string | null; description: string | null }
-
-/**
- * Endereço de um commit no repositório do projeto.
- * @param repoUrl Repositório do projeto (Bitbucket, GitLab ou estilo GitHub).
- * @param sha Hash do commit.
- * @returns A URL, ou null se o projeto não tem repositório cadastrado.
- */
-export function commitUrl(repoUrl: string | null, sha: string): string | null {
-  if (!repoUrl) return null
-  const base = repoUrl.replace(/\/+$/, '').replace(/\.git$/, '')
-  if (/bitbucket\./i.test(base)) return `${base}/commits/${sha}`
-  if (/gitlab/i.test(base)) return `${base}/-/commit/${sha}`
-  return `${base}/commit/${sha}`
-}
-
-/**
- * PRs e commits do deploy, na ordem em que a mensagem os lista.
- * @param d Deploy com PRs, commits e projeto.
- * @returns PRs primeiro, depois commits.
- */
-function changeRefs(d: MessageDeploy): ChangeRef[] {
-  const prs = d.pull_requests.map((p) => ({ label: p.number ? `PR #${p.number}` : 'PR', url: p.url, description: p.description }))
-  const commits = d.commits.map((c) => ({ label: `commit ${c.sha.slice(0, 7)}`, url: commitUrl(d.project.repo_url, c.sha), description: c.description }))
-  return [...prs, ...commits]
-}
-
-/**
- * Lista da mensagem quando o deploy não tem task: as observações com o link do PR ou commit.
- * @param d Deploy sem tasks.
- * @returns Itens em markdown; sem observações usa a descrição de cada PR/commit, e sem nada diz que não há task.
- */
-function noTaskItems(d: MessageDeploy): string {
-  const refs = changeRefs(d)
-  const link = (r: ChangeRef) => (r.url ? `[${r.label}](${r.url})` : r.label)
-  const notes = (d.notes ?? '')
-    .split(/\r?\n/)
-    .map((line) => line.trim().replace(/^[-*•]\s+/, ''))
-    .filter(Boolean)
-  if (notes.length) {
-    const links = refs.map(link).join(', ')
-    return notes.map((line, i) => `- ${line}${links && i === notes.length - 1 ? ` (${links})` : ''}`).join('\n')
-  }
-  if (!refs.length) return NO_TASKS
-  return refs.map((r) => `- ${r.description ? `${r.description} (${link(r)})` : link(r)}`).join('\n')
-}
-
-/**
- * URLs dos PRs e commits quando o deploy não tem task.
- * @param d Deploy sem tasks.
- * @returns Uma URL por linha, ou o aviso de que não há task se nenhuma puder ser montada.
- */
-function noTaskUrls(d: MessageDeploy): string {
-  const urls = changeRefs(d).flatMap((r) => (r.url ? [`- ${r.url}`] : []))
-  return urls.length ? urls.join('\n') : NO_TASKS
 }
 
 /**
@@ -144,8 +80,8 @@ export function messageVars(d: MessageDeploy): MessageVars {
     data: formatDate(d.deployed_on),
     sprint: d.sprint ?? '—',
     branch: d.branch ?? '—',
-    tarefas: d.tasks.length ? d.tasks.map((key, i) => (jira ? `- [${key}](${urls[i]})` : `- ${key}`)).join('\n') : noTaskItems(d),
-    tarefas_urls: d.tasks.length ? urls.map((u) => `- ${u}`).join('\n') : noTaskUrls(d),
+    tarefas: d.tasks.length ? d.tasks.map((key, i) => (jira ? `- [${key}](${urls[i]})` : `- ${key}`)).join('\n') : NO_TASKS,
+    tarefas_urls: d.tasks.length ? urls.map((u) => `- ${u}`).join('\n') : NO_TASKS,
   }
 }
 
