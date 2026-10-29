@@ -255,6 +255,15 @@ select.field {
   @apply font-mono text-[0.92em] tracking-tight;
 }
 
-.text-sm {
-  cursor: pointer;
+/* Tailwind v4 deixa botões com cursor padrão; só o que é clicável vira pointer. */
+@layer base {
+  button:not(:disabled),
+  summary,
+  select,
+  input[type='checkbox'],
+  input[type='radio'],
+  label:has(input[type='checkbox']),
+  label:has(input[type='radio']) {
+    cursor: pointer;
+  }
 }
