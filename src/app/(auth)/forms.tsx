@@ -1,9 +1,22 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
+import { PasswordField, RuleChecklist } from '@/components/password-field'
 import { FieldError, FormNotice, SubmitButton } from '@/components/ui'
 import { useFormAction } from '@/components/use-form-action'
+import { evaluatePassword } from '@/lib/password-rules'
 import { requestPasswordReset, signIn, signUp, updatePassword } from './actions'
+
+/**
+ * Critério de confirmação da senha, exibido assim que a pessoa começa a repetir.
+ * @param password Senha digitada no primeiro campo.
+ * @param confirm Texto digitado no campo de confirmação.
+ * @returns Lista vazia enquanto a confirmação está em branco; senão um item que indica se as senhas conferem.
+ */
+function matchItems(password: string, confirm: string) {
+  return confirm ? [{ id: 'match', label: 'As senhas conferem', met: confirm === password }] : []
+}
 
 export function LoginForm({ next, notice }: { next?: string; notice?: string }) {
   const { state, onSubmit, pending } = useFormAction(signIn)
@@ -23,7 +36,7 @@ export function LoginForm({ next, notice }: { next?: string; notice?: string }) 
             Esqueci a senha
           </Link>
         </div>
-        <input className="field" id="password" name="password" type="password" autoComplete="current-password" required />
+        <PasswordField id="password" name="password" autoComplete="current-password" required />
         <FieldError message={state.fieldErrors?.password} />
       </div>
       <SubmitButton busy={pending} pending="Entrando…" className="btn-primary w-full">Entrar</SubmitButton>
@@ -33,6 +46,8 @@ export function LoginForm({ next, notice }: { next?: string; notice?: string }) 
 
 export function SignUpForm() {
   const { state, onSubmit, pending } = useFormAction(signUp)
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   if (state.message) return <FormNotice message={state.message} />
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
@@ -49,13 +64,30 @@ export function SignUpForm() {
       </div>
       <div>
         <label className="label" htmlFor="password">Senha</label>
-        <input className="field" id="password" name="password" type="password" autoComplete="new-password" required aria-describedby="password-hint" />
-        <p id="password-hint" className="mt-1.5 text-sm text-muted">Pelo menos 10 caracteres, com letras e números.</p>
+        <PasswordField
+          id="password"
+          name="password"
+          autoComplete="new-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          aria-describedby="password-rules"
+        />
+        <RuleChecklist id="password-rules" items={evaluatePassword(password)} />
         <FieldError message={state.fieldErrors?.password} />
       </div>
       <div>
         <label className="label" htmlFor="confirm">Repita a senha</label>
-        <input className="field" id="confirm" name="confirm" type="password" autoComplete="new-password" required />
+        <PasswordField
+          id="confirm"
+          name="confirm"
+          autoComplete="new-password"
+          required
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          aria-describedby="confirm-rules"
+        />
+        <RuleChecklist id="confirm-rules" items={matchItems(password, confirm)} />
         <FieldError message={state.fieldErrors?.confirm} />
       </div>
       <SubmitButton busy={pending} pending="Criando conta…" className="btn-primary w-full">Criar conta</SubmitButton>
@@ -81,18 +113,37 @@ export function ResetRequestForm() {
 
 export function NewPasswordForm() {
   const { state, onSubmit, pending } = useFormAction(updatePassword)
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <FormNotice error={state.error} />
       <div>
         <label className="label" htmlFor="password">Nova senha</label>
-        <input className="field" id="password" name="password" type="password" autoComplete="new-password" required />
-        <p className="mt-1.5 text-sm text-muted">Pelo menos 10 caracteres, com letras e números.</p>
+        <PasswordField
+          id="password"
+          name="password"
+          autoComplete="new-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          aria-describedby="password-rules"
+        />
+        <RuleChecklist id="password-rules" items={evaluatePassword(password)} />
         <FieldError message={state.fieldErrors?.password} />
       </div>
       <div>
         <label className="label" htmlFor="confirm">Repita a nova senha</label>
-        <input className="field" id="confirm" name="confirm" type="password" autoComplete="new-password" required />
+        <PasswordField
+          id="confirm"
+          name="confirm"
+          autoComplete="new-password"
+          required
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          aria-describedby="confirm-rules"
+        />
+        <RuleChecklist id="confirm-rules" items={matchItems(password, confirm)} />
         <FieldError message={state.fieldErrors?.confirm} />
       </div>
       <SubmitButton busy={pending} pending="Salvando…" className="btn-primary w-full">Salvar nova senha</SubmitButton>

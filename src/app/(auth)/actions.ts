@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { env } from '@/lib/env'
 import { fieldErrorsFrom, type FormState } from '@/lib/forms'
+import { hasDigit, hasLetter, PASSWORD_MAX, PASSWORD_MIN } from '@/lib/password-rules'
 import { safeNext } from '@/lib/session'
 import { createClient } from '@/lib/supabase/server'
 
@@ -39,13 +40,13 @@ function configError(error: AuthErr): string | null {
 const email = z.string().trim().toLowerCase().email('Informe um e-mail válido.').max(254)
 const password = z
   .string()
-  .min(10, 'Use pelo menos 10 caracteres.')
-  .max(72, 'Use no máximo 72 caracteres.')
-  .refine((p) => /[a-zA-Z]/.test(p) && /\d/.test(p), 'Misture letras e números.')
+  .min(PASSWORD_MIN, `Use pelo menos ${PASSWORD_MIN} caracteres.`)
+  .max(PASSWORD_MAX, `Use no máximo ${PASSWORD_MAX} caracteres.`)
+  .refine((p) => hasLetter(p) && hasDigit(p), 'Misture letras e números.')
 
 export async function signIn(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = z
-    .object({ email, password: z.string().min(1, 'Informe a senha.').max(72) })
+    .object({ email, password: z.string().min(1, 'Informe a senha.').max(PASSWORD_MAX) })
     .safeParse({ email: formData.get('email'), password: formData.get('password') })
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error.issues) }
 

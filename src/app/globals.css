@@ -217,6 +217,11 @@ h2 {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--staging) 20%, transparent);
   }
 }
+/* O Edge desenha o próprio olho nos campos de senha; o app usa o seu. */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
 /* Select com seta própria, alinhada aos demais campos. */
 select.field {
   appearance: none;
