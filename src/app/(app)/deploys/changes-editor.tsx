@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { emptyRow, rowsFromColumns, type ChangeRow } from '@/lib/change-rows'
+import { nextCell, type GridKey, type GridMove } from '@/lib/grid-nav'
 import type { KnownLink } from '@/lib/data'
 
 /**
@@ -31,6 +32,34 @@ export function ChangesEditor({
   const [pasteRefs, setPasteRefs] = useState('')
   const [pasteOpen, setPasteOpen] = useState(false)
 
+  const listRef = useRef<HTMLOListElement>(null)
+  const pendingFocus = useRef<GridMove | null>(null)
+
+  // Depois de criar uma linha com ↓, o foco vai para ela assim que ela existe no DOM.
+  useEffect(() => {
+    if (!pendingFocus.current) return
+    focusCell(listRef.current, pendingFocus.current)
+    pendingFocus.current = null
+  }, [rows.length])
+
+  /**
+   * Setas movem o foco entre os campos; ↓ na última linha cria outra.
+   * @param e Evento de teclado do campo.
+   * @param row Linha do campo.
+   * @param col Coluna do campo.
+   */
+  const onGridKeyDown = (e: KeyboardEvent<HTMLInputElement>, row: number, col: number) => {
+    if (!ARROWS.has(e.key) || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || e.nativeEvent.isComposing) return
+    const el = e.currentTarget
+    const caret = { start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0, length: el.value.length }
+    const move = nextCell(e.key as GridKey, { row, col }, { rows: rows.length, cols: COLS }, caret)
+    if (!move) return
+    e.preventDefault()
+    if (move.row < rows.length) return focusCell(listRef.current, move)
+    pendingFocus.current = move
+    setRows((rs) => [...rs, emptyRow()])
+  }
+
   const update = (i: number, patch: Partial<ChangeRow>) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)))
 
   // Ao sair do campo do PR, completa task e descrição se o PR já foi vinculado antes.
@@ -51,7 +80,7 @@ export function ChangesEditor({
   }
 
   return (
-    <div>
+    <div className="group/changes">
       <input type="hidden" name="changes" value={JSON.stringify(rows)} />
       <div className="hidden gap-3 px-1 pb-1.5 text-sm font-medium text-ink-2 md:grid md:grid-cols-[1.3fr_1fr_1.3fr_2.25rem]">
         <span>PR ou commit</span>
@@ -59,7 +88,7 @@ export function ChangesEditor({
         <span>Descrição</span>
         <span />
       </div>
-      <ol className="space-y-3 md:space-y-2">
+      <ol ref={listRef} className="space-y-3 md:space-y-2">
         {rows.map((row, i) => {
           const noTask = row.ref.trim() !== '' && row.tasks.trim() === ''
           return (
@@ -67,29 +96,38 @@ export function ChangesEditor({
               <label className="sr-only" htmlFor={`ref-${i}`}>PR ou commit da linha {i + 1}</label>
               <input
                 id={`ref-${i}`}
+                data-row={i}
+                data-col={0}
                 className="field code"
                 value={row.ref}
                 placeholder={repoUrl ? '988 ou link do PR' : 'Link do PR ou hash do commit'}
                 spellCheck={false}
                 onChange={(e) => update(i, { ref: e.target.value })}
                 onBlur={() => fillFromKnown(i)}
+                onKeyDown={(e) => onGridKeyDown(e, i, 0)}
               />
               <label className="sr-only" htmlFor={`tasks-${i}`}>Task da linha {i + 1}</label>
               <input
                 id={`tasks-${i}`}
+                data-row={i}
+                data-col={1}
                 className="field code"
                 value={row.tasks}
                 placeholder={noTask ? 'Sem task' : jiraPrefix ? `1184 ou ${jiraPrefix}-1184` : 'ABC-123'}
                 spellCheck={false}
                 onChange={(e) => update(i, { tasks: e.target.value })}
+                onKeyDown={(e) => onGridKeyDown(e, i, 1)}
               />
               <label className="sr-only" htmlFor={`desc-${i}`}>Descrição da linha {i + 1}</label>
               <input
                 id={`desc-${i}`}
+                data-row={i}
+                data-col={2}
                 className={`field ${noTask && !row.description.trim() ? 'border-warn' : ''}`}
                 value={row.description}
                 placeholder={noTask ? 'Obrigatória: o que mudou' : 'Opcional'}
                 onChange={(e) => update(i, { description: e.target.value })}
+                onKeyDown={(e) => onGridKeyDown(e, i, 2)}
               />
               <button
                 type="button"
@@ -103,6 +141,14 @@ export function ChangesEditor({
           )
         })}
       </ol>
+
+      <p
+        aria-hidden
+        className="mt-2 hidden h-6 items-center gap-1.5 text-sm text-muted opacity-0 transition-opacity motion-reduce:transition-none group-has-[ol:focus-within]/changes:opacity-100 md:flex"
+      >
+        <Key>←</Key><Key>↑</Key><Key>↓</Key><Key>→</Key>
+        <span>movem entre os campos; <Key>↓</Key> na última linha cria uma nova.</span>
+      </p>
 
       {error && (
         <ul className="mt-3 space-y-1 text-sm text-danger" role="alert">
@@ -142,6 +188,31 @@ export function ChangesEditor({
       )}
     </div>
   )
+}
+
+const COLS = 3
+
+/**
+ * Tecla desenhada como botão, para dicas de atalho.
+ * @param props.children Símbolo da tecla.
+ * @returns Elemento kbd estilizado.
+ */
+function Key({ children }: { children: React.ReactNode }) {
+  return <kbd className="code inline-flex min-w-6 justify-center rounded-md border border-line-strong bg-lift px-1 text-xs text-ink-2">{children}</kbd>
+}
+const ARROWS = new Set<string>(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
+
+/**
+ * Foca o campo da célula e posiciona o cursor.
+ * @param list Lista de linhas do editor.
+ * @param move Célula de destino e posição do cursor.
+ */
+function focusCell(list: HTMLElement | null, { row, col, caret }: GridMove) {
+  const el = list?.querySelector<HTMLInputElement>(`[data-row="${row}"][data-col="${col}"]`)
+  if (!el) return
+  el.focus()
+  const at = caret === 'start' ? 0 : el.value.length
+  el.setSelectionRange(at, at)
 }
 
 // Link de PR do próprio repositório do projeto aparece só como número, mais fácil de ler.
