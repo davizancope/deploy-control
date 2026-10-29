@@ -2,12 +2,19 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { FieldError, FormNotice, SubmitButton } from '@/components/ui'
+import { EnvMark, FieldError, FormNotice, SubmitButton, TypeMark } from '@/components/ui'
 import { useFormAction } from '@/components/use-form-action'
 import type { ChangeRow } from '@/lib/change-rows'
+import { TYPE_LABEL } from '@/lib/types'
 import { saveDeploy } from './actions'
 import type { KnownLink } from '@/lib/data'
 import { ChangesEditor } from './changes-editor'
+
+const TYPE_CHECKED = {
+  release: 'peer-checked:border-release peer-checked:bg-release-soft',
+  hotfix: 'peer-checked:border-hotfix peer-checked:bg-hotfix-soft',
+  bugfix: 'peer-checked:border-bugfix peer-checked:bg-bugfix-soft',
+} as const
 
 export type DeployFormValues = {
   id: string
@@ -62,16 +69,14 @@ export function DeployForm({
             return (
               <label
                 key={e}
-                className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 px-4 py-3 transition-colors has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-[var(--focus)] ${
+                className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 transition-colors has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-[var(--focus)] ${
                   checked
                     ? prod ? 'border-production bg-production-soft' : 'border-staging bg-staging-soft'
-                    : 'border-line bg-surface hover:border-line-strong'
+                    : 'border-line bg-sunken hover:border-line-strong'
                 }`}
               >
                 <input type="radio" name="environment" value={e} checked={checked} onChange={() => setEnv(e)} className="sr-only" />
-                <svg width="16" height="16" viewBox="0 0 10 10" aria-hidden="true" className={prod ? 'text-production' : 'text-staging'}>
-                  {prod ? <path d="M5 0.5 9.5 5 5 9.5 0.5 5z" fill="currentColor" /> : <circle cx="5" cy="5" r="3.6" fill="none" stroke="currentColor" strokeWidth="1.8" />}
-                </svg>
+                <span className={prod ? 'text-production' : 'text-staging'}><EnvMark env={e} size={22} /></span>
                 <span className="font-semibold">{prod ? 'Produção' : 'Staging'}</span>
               </label>
             )
@@ -124,8 +129,11 @@ export function DeployForm({
               {(['release', 'hotfix', 'bugfix'] as const).map((t) => (
                 <label key={t} className="flex-1">
                   <input type="radio" name="type" value={t} defaultChecked={values.type === t} className="peer sr-only" />
-                  <span className="block cursor-pointer rounded-md border border-line-strong bg-surface px-3 py-2 text-center text-[15px] peer-checked:border-ink peer-checked:bg-ink peer-checked:text-paper peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]">
-                    {t === 'release' ? 'Release' : t === 'hotfix' ? 'Hotfix' : 'Bugfix'}
+                  <span className={`block cursor-pointer rounded-xl border border-line-strong bg-lift px-3 py-2 text-center text-[15px] ${TYPE_CHECKED[t]} peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--focus)]`}>
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <TypeMark type={t} size={16} />
+                      {TYPE_LABEL[t]}
+                    </span>
                   </span>
                 </label>
               ))}

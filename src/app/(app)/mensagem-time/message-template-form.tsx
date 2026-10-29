@@ -58,7 +58,7 @@ export function MessageTemplateForm({ initial, canEdit }: { initial: string; can
           </p>
           <FieldError message={state.fieldErrors?.body} />
           {unknown.length > 0 && (
-            <p role="status" className="mt-1.5 text-sm text-hotfix">
+            <p role="status" className="mt-1.5 text-sm text-warn">
               Campo{unknown.length > 1 ? 's' : ''} que não existe{unknown.length > 1 ? 'm' : ''}: {unknown.map((k) => `{{${k}}}`).join(', ')}. {unknown.length > 1 ? 'Ficarão' : 'Ficará'} como escrito{unknown.length > 1 ? 's' : ''} na mensagem.
             </p>
           )}
@@ -78,14 +78,14 @@ export function MessageTemplateForm({ initial, canEdit }: { initial: string; can
           <h2 id="preview-h" className="mb-1 text-lg font-semibold">Prévia</h2>
           <p className="mb-3 text-sm text-muted">Com dados de exemplo.</p>
           <div
-            className="space-y-3 rounded-lg border border-line bg-surface p-4 text-[15px] [&_a]:pointer-events-none [&_a]:underline [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5"
+            className="space-y-3 glass rounded-2xl p-4 text-[15px] [&_a]:pointer-events-none [&_a]:underline [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5"
             dangerouslySetInnerHTML={{ __html: previewHtml }}
           />
         </section>
 
         <section aria-labelledby="campos-h">
           <h2 id="campos-h" className="mb-3 text-lg font-semibold">Campos disponíveis</h2>
-          <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
+          <ul className="divide-y divide-line glass rounded-2xl">
             {MESSAGE_PLACEHOLDERS.map((p) => (
               <li key={p.key} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-2.5">
                 <button

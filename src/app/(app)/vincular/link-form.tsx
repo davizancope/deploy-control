@@ -26,7 +26,7 @@ export function LinkForm({ kind, id, candidates }: { kind: 'pr' | 'commit'; id: 
             {candidates.map((t) => (
               <label key={t} className="cursor-pointer">
                 <input type="checkbox" name="tasks" value={t} className="peer sr-only" />
-                <span className="code inline-block rounded-md border border-line-strong bg-surface px-2 py-1 text-sm peer-checked:border-ink peer-checked:bg-ink peer-checked:text-paper peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--focus)] peer-disabled:opacity-50">
+                <span className="code inline-block rounded-xl border border-line-strong bg-lift px-2 py-1 text-sm peer-checked:border-ink peer-checked:bg-ink peer-checked:text-paper peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--focus)] peer-disabled:opacity-50">
                   {t}
                 </span>
               </label>

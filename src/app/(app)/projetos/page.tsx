@@ -27,7 +27,7 @@ export default async function ProjectsPage({ searchParams }: PageProps<'/projeto
       </header>
 
       {sp.novo && (
-        <div className="mb-8 rounded-lg border border-production/30 bg-production-soft px-5 py-4">
+        <div className="mb-8 rounded-2xl border border-production/30 bg-production-soft px-5 py-4">
           <p className="font-semibold">Organização criada.</p>
           <p className="text-ink-2">
             Cadastre os projetos aqui ou <Link href="/importar" className="link">importe a planilha</Link>: cada aba vira um projeto.
@@ -39,9 +39,9 @@ export default async function ProjectsPage({ searchParams }: PageProps<'/projeto
         <section aria-labelledby="lista">
           <h2 id="lista" className="sr-only">Lista de projetos</h2>
           {projects.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-line-strong px-6 py-10 text-center text-ink-2">Nenhum projeto ainda.</p>
+            <p className="rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center text-ink-2">Nenhum projeto ainda.</p>
           ) : (
-            <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
+            <ul className="divide-y divide-line glass rounded-2xl">
               {projects.map((p) => {
                 const s = stats.get(p.id)
                 return (
@@ -77,7 +77,7 @@ export default async function ProjectsPage({ searchParams }: PageProps<'/projeto
         </section>
 
         {ctx.canManage && (
-          <section aria-labelledby="novo" className="h-fit rounded-lg border border-line bg-surface p-5">
+          <section aria-labelledby="novo" className="h-fit glass rounded-2xl p-5">
             <h2 id="novo" className="mb-4 text-lg font-semibold">Novo projeto</h2>
             <ProjectForm submitLabel="Criar projeto" />
           </section>

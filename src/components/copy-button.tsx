@@ -105,13 +105,13 @@ export function CopyIconButton({ text, label, message }: { text: string; label: 
         title={label}
         aria-label={label}
         onClick={() => copy(text)}
-        className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+        className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-line-strong bg-lift text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
       >
         <CopyIcon />
       </button>
       <div role="status" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
         {state !== 'idle' && (
-          <p className={`rounded-md px-4 py-2 text-sm shadow-lg ${state === 'copied' ? 'bg-ink text-paper' : 'bg-danger text-paper'}`}>
+          <p className={`rounded-xl px-4 py-2 text-sm shadow-lg ${state === 'copied' ? 'bg-ink text-paper' : 'bg-danger text-paper'}`}>
             {state === 'copied' ? message : 'Não foi possível copiar.'}
           </p>
         )}

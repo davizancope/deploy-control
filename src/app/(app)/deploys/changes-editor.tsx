@@ -63,7 +63,7 @@ export function ChangesEditor({
         {rows.map((row, i) => {
           const noTask = row.ref.trim() !== '' && row.tasks.trim() === ''
           return (
-            <li key={i} className="grid gap-2 rounded-lg border border-line bg-surface p-3 md:grid-cols-[1.3fr_1fr_1.3fr_2.25rem] md:items-start md:gap-3 md:border-0 md:bg-transparent md:p-0">
+            <li key={i} className="grid gap-2 rounded-xl bg-sunken p-3 md:grid-cols-[1.3fr_1fr_1.3fr_2.25rem] md:items-start md:gap-3 md:border-0 md:bg-transparent md:p-0">
               <label className="sr-only" htmlFor={`ref-${i}`}>PR ou commit da linha {i + 1}</label>
               <input
                 id={`ref-${i}`}
@@ -86,7 +86,7 @@ export function ChangesEditor({
               <label className="sr-only" htmlFor={`desc-${i}`}>Descrição da linha {i + 1}</label>
               <input
                 id={`desc-${i}`}
-                className={`field ${noTask && !row.description.trim() ? 'border-hotfix' : ''}`}
+                className={`field ${noTask && !row.description.trim() ? 'border-warn' : ''}`}
                 value={row.description}
                 placeholder={noTask ? 'Obrigatória: o que mudou' : 'Opcional'}
                 onChange={(e) => update(i, { description: e.target.value })}
@@ -123,7 +123,7 @@ export function ChangesEditor({
       </p>
 
       {pasteOpen && (
-        <div className="mt-4 rounded-lg border border-line bg-sunken/50 p-4">
+        <div className="mt-4 rounded-2xl border border-line bg-sunken/50 p-4">
           <p className="mb-3 text-sm text-ink-2">
             Cole a coluna de tasks e a de PRs como estão na planilha. A linha 1 de uma vira par da linha 1 da outra.
           </p>
