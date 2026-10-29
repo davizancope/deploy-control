@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_MESSAGE_TEMPLATE,
   SAMPLE_DEPLOY,
+  commitUrl,
   findUnknownPlaceholders,
   markdownToHtml,
   messageVars,
@@ -26,11 +27,57 @@ describe('messageVars', () => {
   })
 
   it('lida com projeto sem Jira, sem tasks e sem sprint/branch', () => {
-    const v = messageVars({ ...SAMPLE_DEPLOY, sprint: null, branch: null, project: { name: 'P', jira_base_url: null } })
+    const v = messageVars({ ...SAMPLE_DEPLOY, sprint: null, branch: null, project: { name: 'P', jira_base_url: null, repo_url: null } })
     expect(v.tarefas).toBe('- ABC-101\n- ABC-102')
     expect(v.sprint).toBe('—')
     expect(v.branch).toBe('—')
     expect(messageVars({ ...SAMPLE_DEPLOY, tasks: [] }).tarefas).toBe('- Nenhuma task vinculada')
+  })
+})
+
+describe('commitUrl', () => {
+  it('monta o endereço conforme o provedor e devolve null sem repositório', () => {
+    expect(commitUrl('https://bitbucket.org/emp/repo/', 'abc1234')).toBe('https://bitbucket.org/emp/repo/commits/abc1234')
+    expect(commitUrl('https://github.com/emp/repo.git', 'abc1234')).toBe('https://github.com/emp/repo/commit/abc1234')
+    expect(commitUrl('https://gitlab.com/emp/repo', 'abc1234')).toBe('https://gitlab.com/emp/repo/-/commit/abc1234')
+    expect(commitUrl(null, 'abc1234')).toBeNull()
+  })
+})
+
+describe('messageVars sem task', () => {
+  const noTask = {
+    ...SAMPLE_DEPLOY,
+    tasks: [],
+    project: { name: 'P', jira_base_url: 'https://x.atlassian.net', repo_url: 'https://bitbucket.org/emp/repo' },
+  }
+  const pr = { url: 'https://bitbucket.org/emp/repo/pull-requests/12', number: 12, description: 'Ajuste de CSS' }
+  const commit = { sha: 'abc1234def5678', description: null }
+
+  it('usa as observações e linka o PR ou commit', () => {
+    const v = messageVars({ ...noTask, notes: 'Correção do banner', pull_requests: [pr], commits: [commit] })
+    expect(v.tarefas).toBe('- Correção do banner ([PR #12](https://bitbucket.org/emp/repo/pull-requests/12), [commit abc1234](https://bitbucket.org/emp/repo/commits/abc1234def5678))')
+    expect(v.tarefas_urls).toBe('- https://bitbucket.org/emp/repo/pull-requests/12\n- https://bitbucket.org/emp/repo/commits/abc1234def5678')
+  })
+
+  it('observações em várias linhas viram itens e os links vão no último', () => {
+    const v = messageVars({ ...noTask, notes: '- Linha 1\n\nLinha 2', pull_requests: [pr] })
+    expect(v.tarefas).toBe('- Linha 1\n- Linha 2 ([PR #12](https://bitbucket.org/emp/repo/pull-requests/12))')
+  })
+
+  it('sem observações usa a descrição do PR/commit; sem nada, avisa que não há task', () => {
+    expect(messageVars({ ...noTask, notes: null, pull_requests: [pr] }).tarefas).toBe('- Ajuste de CSS ([PR #12](https://bitbucket.org/emp/repo/pull-requests/12))')
+    expect(messageVars({ ...noTask, notes: '  ' }).tarefas).toBe('- Nenhuma task vinculada')
+    expect(messageVars({ ...noTask, notes: '  ' }).tarefas_urls).toBe('- Nenhuma task vinculada')
+  })
+
+  it('commit sem repositório cadastrado aparece só pelo hash', () => {
+    const v = messageVars({ ...noTask, project: { ...noTask.project, repo_url: null }, notes: 'Ajuste', commits: [commit] })
+    expect(v.tarefas).toBe('- Ajuste (commit abc1234)')
+    expect(v.tarefas_urls).toBe('- Nenhuma task vinculada')
+  })
+
+  it('com tasks, as observações não entram', () => {
+    expect(messageVars({ ...SAMPLE_DEPLOY, notes: 'ignorada' }).tarefas).not.toContain('ignorada')
   })
 })
 
