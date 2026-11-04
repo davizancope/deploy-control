@@ -121,8 +121,13 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
                         {s && <TaskStatus s={s} />}
                       </div>
                       {refs.length > 0 && (
-                        <ul className="mt-2 flex flex-wrap gap-2">
-                          {refs.map((r) => <li key={'url' in r ? r.url : r.sha}><RefChip item={r} /></li>)}
+                        <ul className="mt-2 flex flex-wrap gap-x-2 gap-y-1.5">
+                          {refs.map((r) => (
+                            <li key={'url' in r ? r.url : r.sha} className={`flex min-w-0 items-start gap-2 ${r.description ? 'basis-full' : ''}`}>
+                              <RefChip item={r} />
+                              {r.description && <span className="min-w-0 break-words py-0.5 text-sm text-ink-2">{r.description}</span>}
+                            </li>
+                          ))}
                         </ul>
                       )}
                     </li>
@@ -222,13 +227,13 @@ function TaskStatus({ s }: { s: TaskSummary }) {
 function RefChip({ item }: { item: DeployDetail['pull_requests'][number] | DeployDetail['commits'][number] }) {
   if ('url' in item) {
     return (
-      <a href={item.url} target="_blank" rel="noopener noreferrer" className="code inline-block rounded-xl border border-line bg-lift px-2 py-0.5 text-sm hover:border-ink" title={item.description ?? undefined}>
+      <a href={item.url} target="_blank" rel="noopener noreferrer" className="code inline-block shrink-0 rounded-xl border border-line bg-lift px-2 py-0.5 text-sm hover:border-ink" title={item.description ?? undefined}>
         PR {item.number ? `#${item.number}` : item.url}
       </a>
     )
   }
   return (
-    <span className="code inline-block rounded-xl border border-dashed border-line-strong px-2 py-0.5 text-sm" title={item.description ?? undefined}>
+    <span className="code inline-block shrink-0 rounded-xl border border-dashed border-line-strong px-2 py-0.5 text-sm" title={item.description ?? undefined}>
       {item.cherry_pick ? 'cherry-pick ' : 'commit '}
       {item.sha.slice(0, 7)}
     </span>

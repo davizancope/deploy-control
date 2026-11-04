@@ -1,5 +1,6 @@
 import 'server-only'
 import { DEFAULT_MESSAGE_TEMPLATE } from '@/lib/release-message'
+import type { RefPr } from '@/lib/deploy-refs'
 import type { AppContext } from '@/lib/session'
 import type { DeployType, Environment, LinkedCommit, LinkedPr } from '@/lib/types'
 
@@ -22,8 +23,8 @@ export type DeployListItem = {
   deployed_on: string
   sprint: string | null
   type: DeployType
-  task_count: number
-  pr_count: number
+  tasks: string[]
+  pull_requests: RefPr[]
 }
 
 export type DeployDetail = {
@@ -103,7 +104,7 @@ export async function listDeploys(ctx: AppContext, f: DeployFilters): Promise<{ 
   let query = ctx.supabase
     .from('deployments')
     .select(
-      'id, project_id, code_version, branch, environment, deployed_on, sprint, type, projects!inner(name), deployment_tasks(count), deployment_pull_requests(count)',
+      'id, project_id, code_version, branch, environment, deployed_on, sprint, type, projects!inner(name), deployment_tasks(task_key), deployment_pull_requests(pull_requests(id, url, number, description, no_task, pull_request_tasks(task_key)))',
     )
     .eq('org_id', ctx.org.id)
     .eq('projects.archived', false)
@@ -131,17 +132,19 @@ export async function listDeploys(ctx: AppContext, f: DeployFilters): Promise<{ 
   const { data, error } = await query
   if (error) throw new Error(`Erro ao carregar deploys: ${error.message}`)
   const rows = (data ?? []) as unknown as Array<
-    Omit<DeployListItem, 'project_name' | 'task_count' | 'pr_count'> & {
+    Omit<DeployListItem, 'project_name' | 'tasks' | 'pull_requests'> & {
       projects: { name: string } | null
-      deployment_tasks: { count: number }[]
-      deployment_pull_requests: { count: number }[]
+      deployment_tasks: { task_key: string }[]
+      deployment_pull_requests: Array<{ pull_requests: (Omit<RefPr, 'tasks'> & { pull_request_tasks: { task_key: string }[] }) | null }>
     }
   >
   const items = rows.slice(0, PAGE_SIZE).map(({ projects, deployment_tasks, deployment_pull_requests, ...d }) => ({
     ...d,
     project_name: projects?.name ?? '—',
-    task_count: deployment_tasks?.[0]?.count ?? 0,
-    pr_count: deployment_pull_requests?.[0]?.count ?? 0,
+    tasks: (deployment_tasks ?? []).map((t) => t.task_key).sort(compareTaskKeys),
+    pull_requests: (deployment_pull_requests ?? [])
+      .flatMap(({ pull_requests: p }) => (p ? [{ id: p.id, url: p.url, number: p.number, description: p.description, no_task: p.no_task, tasks: p.pull_request_tasks.map((t) => t.task_key).sort(compareTaskKeys) }] : []))
+      .sort((a, b) => (a.number ?? 0) - (b.number ?? 0)),
   }))
   return { items, hasMore: rows.length > PAGE_SIZE }
 }
