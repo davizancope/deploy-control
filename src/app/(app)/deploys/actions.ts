@@ -33,7 +33,7 @@ const schema = z.object({
 })
 
 const rowsSchema = z
-  .array(z.object({ ref: z.string().max(600), tasks: z.string().max(2000), description: z.string().max(600) }))
+  .array(z.object({ ref: z.string().max(600), tasks: z.string().max(2000), description: z.string().max(600), has_metadata: z.boolean().optional(), metadata_path: z.string().max(500).optional() }))
   .max(200)
 
 export async function saveDeploy(_prev: FormState, formData: FormData): Promise<FormState> {

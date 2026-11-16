@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CopyButton, CopyIconButton } from '@/components/copy-button'
 import { Flash } from '@/components/flash'
-import { EnvBadge, EnvMark, TypeBadge } from '@/components/ui'
+import { EnvBadge, EnvMark, MetadataBadge, TypeBadge } from '@/components/ui'
 import { getDeploy, getMessageTemplate, type DeployDetail } from '@/lib/data'
 import { daysBetween, formatDate, formatDayHeading, plural } from '@/lib/format'
 import { markdownToHtml, messageVars, renderTemplate, taskUrls } from '@/lib/release-message'
@@ -40,6 +40,7 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
 
   const jira = d.project.jira_base_url
   const refsAll = [...d.pull_requests, ...d.commits]
+  const metadataPrs = d.pull_requests.filter((p) => p.has_metadata_import)
   const noTask = refsAll.filter((r) => !r.tasks.length && r.no_task)
   const pending = refsAll.filter((r) => !r.tasks.length && !r.no_task)
   const prod = d.environment === 'production'
@@ -74,6 +75,7 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <EnvBadge env={d.environment} />
           <TypeBadge type={d.type} />
+          {metadataPrs.length > 0 && <MetadataBadge count={metadataPrs.length} />}
         </div>
 
         {ctx.canWrite && (
@@ -164,6 +166,20 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
         </section>
 
         <aside className="space-y-8">
+          {metadataPrs.length > 0 && (
+            <div className="rounded-2xl border border-warn/40 bg-warn-soft px-4 py-3">
+              <h2 className="mb-2 font-semibold">Metadados para importar</h2>
+              <ul className="space-y-2">
+                {metadataPrs.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <RefChip item={p} />
+                    <span className="code break-all text-sm">{p.metadata_import_path ?? '—'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-3 text-[15px]">
             <dt className="text-ink-2">Branch base</dt>
             <dd className="code break-all">{d.branch ?? '—'}</dd>

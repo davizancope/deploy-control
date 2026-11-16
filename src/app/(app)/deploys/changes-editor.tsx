@@ -82,17 +82,18 @@ export function ChangesEditor({
   return (
     <div className="group/changes">
       <input type="hidden" name="changes" value={JSON.stringify(rows)} />
-      <div className="hidden gap-3 px-1 pb-1.5 text-sm font-medium text-ink-2 md:grid md:grid-cols-[1.3fr_1fr_1.3fr_2.25rem]">
+      <div className="hidden gap-3 px-1 pb-1.5 text-sm font-medium text-ink-2 md:grid md:grid-cols-[1.3fr_1fr_1.3fr_4.5rem_2.25rem]">
         <span>PR ou commit</span>
         <span>Task</span>
         <span>Descrição</span>
+        <span className="text-center">Metadados</span>
         <span />
       </div>
       <ol ref={listRef} className="space-y-3 md:space-y-2">
         {rows.map((row, i) => {
           const noTask = row.ref.trim() !== '' && row.tasks.trim() === ''
           return (
-            <li key={i} className="grid gap-2 rounded-xl bg-sunken p-3 md:grid-cols-[1.3fr_1fr_1.3fr_2.25rem] md:items-start md:gap-3 md:border-0 md:bg-transparent md:p-0">
+            <li key={i} className="grid gap-2 rounded-xl bg-sunken p-3 md:grid-cols-[1.3fr_1fr_1.3fr_4.5rem_2.25rem] md:items-start md:gap-3 md:border-0 md:bg-transparent md:p-0">
               <label className="sr-only" htmlFor={`ref-${i}`}>PR ou commit da linha {i + 1}</label>
               <input
                 id={`ref-${i}`}
@@ -129,6 +130,15 @@ export function ChangesEditor({
                 onChange={(e) => update(i, { description: e.target.value })}
                 onKeyDown={(e) => onGridKeyDown(e, i, 2)}
               />
+              <label className="flex min-h-10 items-center gap-2 text-sm text-ink-2 md:justify-center">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-[var(--ink)]"
+                  checked={Boolean(row.has_metadata)}
+                  onChange={(e) => update(i, { has_metadata: e.target.checked })}
+                />
+                <span className="md:sr-only">Tem metadados para importar<span className="sr-only"> (linha {i + 1})</span></span>
+              </label>
               <button
                 type="button"
                 className="btn justify-self-end px-2 text-ink-2 hover:bg-sunken hover:text-danger md:justify-self-auto"
@@ -137,6 +147,21 @@ export function ChangesEditor({
               >
                 ✕
               </button>
+              {row.has_metadata && (
+                <div className="md:col-span-full">
+                  <label className="sr-only" htmlFor={`meta-${i}`}>Caminho do import dos metadados da linha {i + 1}</label>
+                  <input
+                    id={`meta-${i}`}
+                    className={`field code ${!(row.metadata_path ?? '').trim() ? 'border-warn' : ''}`}
+                    value={row.metadata_path ?? ''}
+                    placeholder="Caminho do import dos metadados, ex.: run_once/test/system-objects"
+                    maxLength={500}
+                    spellCheck={false}
+                    autoComplete="off"
+                    onChange={(e) => update(i, { metadata_path: e.target.value })}
+                  />
+                </div>
+              )}
             </li>
           )
         })}
@@ -166,6 +191,7 @@ export function ChangesEditor({
       </div>
       <p className="mt-2 text-sm text-muted">
         Cada PR ou commit precisa de uma task. Sem task, escreva na descrição o que mudou. Task sem PR pode ficar com o primeiro campo vazio.
+        Marque Metadados no PR que leva data para importar e informe o caminho do import.
       </p>
 
       {pasteOpen && (
