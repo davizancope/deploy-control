@@ -4,7 +4,7 @@ import { AutoSubmitSelect } from '@/components/auto-submit-select'
 import { BranchMap } from '@/components/charts/branch-map'
 import { Icon } from '@/components/icons'
 import { EnvMark, TypeBadge, TypeMark } from '@/components/ui'
-import { buildBranchGraph, layoutBranchGraph, type BranchDeploy, type BranchGraph, type BranchMerge, type BranchNode } from '@/lib/branch-graph'
+import { buildBranchGraph, layoutBranchTimeline, type BranchDeploy, type BranchGraph, type BranchMerge, type BranchNode } from '@/lib/branch-graph'
 import { fetchAllPages, listProjects } from '@/lib/data'
 import { addDays, formatDate, plural } from '@/lib/format'
 import { todayIso } from '@/lib/parse/dates'
@@ -60,7 +60,7 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
       .range(a, b),
   )
   const graph = buildBranchGraph(rows as unknown as BranchDeploy[], mergeRows as unknown as BranchMerge[])
-  const layout = layoutBranchGraph(graph)
+  const timeline = layoutBranchTimeline(graph, { today: todayIso() })
   const node = selected ? graph.nodes.get(selected) : undefined
 
   const hrefFor = (branch: string) => {
@@ -75,7 +75,7 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight">Branches</h1>
           <p className="max-w-[60ch] text-ink-2">
-            De onde cada branch nasceu e o que entrou nela em {project.name}. Clique numa branch para ver o ciclo de vida.
+            De onde cada branch nasceu e quando voltou para a {timeline.trunk} em {project.name}. Clique numa branch para ver o ciclo de vida.
           </p>
         </div>
         <form className="flex flex-wrap items-center gap-2">
@@ -107,15 +107,15 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
       ) : (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <section className="glass min-w-0 rounded-2xl" aria-label="Mapa de branches">
-            <Legend />
-            {layout.nodes.length > 0 ? (
-              <BranchMap layout={layout} selected={selected} dimProduction={pending} hrefFor={hrefFor} />
+            <Legend trunk={timeline.trunk} />
+            {timeline.lanes.length > 0 ? (
+              <BranchMap timeline={timeline} selected={selected} dimProduction={pending} hrefFor={hrefFor} />
             ) : (
               <p className="px-5 py-8 text-ink-2">Nenhuma branch ligada a outra neste período. As que subiram sem origem estão na lista ao lado.</p>
             )}
           </section>
           <div className="space-y-6">
-            {node && <BranchDetail graph={graph} node={node} hrefFor={hrefFor} projectId={project.id} canWrite={ctx.canWrite} today={todayIso()} />}
+            {node && <BranchDetail graph={graph} trunk={timeline.trunk} node={node} hrefFor={hrefFor} projectId={project.id} canWrite={ctx.canWrite} today={todayIso()} />}
             <Orphans items={graph.orphans} hrefFor={hrefFor} selected={selected} />
           </div>
         </div>
@@ -124,30 +124,40 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
   )
 }
 
-function Legend() {
+function Legend({ trunk }: { trunk: string }) {
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 border-b border-line px-5 py-3 text-sm text-ink-2">
       <span className="inline-flex items-center gap-2">
-        <svg width="28" height="8" aria-hidden="true"><path d="M1 4h26" stroke="var(--line-strong)" strokeWidth="1.5" strokeLinecap="round" /></svg>
-        Criada a partir de
+        <svg width="28" height="8" aria-hidden="true"><path d="M1 4h26" stroke="var(--staging)" strokeWidth="3" strokeLinecap="round" /></svg>
+        Só em staging
       </span>
       <span className="inline-flex items-center gap-2">
-        <svg width="28" height="8" aria-hidden="true"><path d="M1 4h26" stroke="var(--line-strong)" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="5 5" /></svg>
-        Mesclada em
+        <svg width="28" height="8" aria-hidden="true"><path d="M1 4h26" stroke="var(--production)" strokeWidth="3" strokeLinecap="round" /></svg>
+        Em produção
       </span>
       <span className="inline-flex items-center gap-2">
-        <svg width="28" height="8" aria-hidden="true"><path d="M1 4h26" stroke="var(--production)" strokeWidth="1.5" strokeLinecap="round" /></svg>
-        Chegou na master
+        <svg width="28" height="10" aria-hidden="true"><path d="M1 5h22" stroke="var(--production)" strokeWidth="2" strokeLinecap="round" /><path d="M22 1l5 4-5 4z" fill="var(--production)" /></svg>
+        Merge na {trunk}
       </span>
-      {(['release', 'bugfix', 'hotfix'] as const).map((t) => (
-        <span key={t} className="inline-flex items-center gap-1.5"><TypeMark type={t} size={15} />{t === 'release' ? 'Release' : t === 'bugfix' ? 'Bugfix' : 'Hotfix'}</span>
-      ))}
+      <span className="inline-flex items-center gap-2">
+        <svg width="28" height="10" aria-hidden="true"><path d="M1 5h22" stroke="var(--ink-2)" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 4" /><path d="M22 1l5 4-5 4z" fill="var(--ink-2)" /></svg>
+        Incluída em outra branch
+      </span>
+      <span className="inline-flex items-center gap-2">
+        <svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--pop)" stroke="var(--staging)" strokeWidth="2" /></svg>
+        Aberta
+      </span>
+      <span className="inline-flex items-center gap-2">
+        <svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="var(--pop)" stroke="var(--warn)" strokeWidth="2" /><text x="9" y="13" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--warn)">?</text></svg>
+        Em produção sem merge registrado
+      </span>
     </div>
   )
 }
 
 function BranchDetail({
   graph,
+  trunk,
   node,
   hrefFor,
   projectId,
@@ -155,6 +165,7 @@ function BranchDetail({
   today,
 }: {
   graph: BranchGraph
+  trunk: string
   node: BranchNode
   hrefFor: (b: string) => string
   projectId: string
@@ -191,7 +202,7 @@ function BranchDetail({
       ))}
       {(node.merges.length > 0 || (canWrite && node.deploys.length > 0)) && (
         <div className="mb-4">
-          <h3 className="mb-1.5 text-sm font-semibold">Na master</h3>
+          <h3 className="mb-1.5 text-sm font-semibold">Na {trunk}</h3>
           {node.merges.length === 0 && <p className="mb-2 text-sm text-ink-2">Ainda não foi mesclada. Registre quando o merge acontecer.</p>}
           <ul className="mb-2 space-y-1.5">
             {node.merges.map((m) => (
@@ -209,7 +220,7 @@ function BranchDetail({
               </li>
             ))}
           </ul>
-          {canWrite && node.deploys.length > 0 && <MergeForm key={node.name} projectId={projectId} branch={node.name} today={today} />}
+          {canWrite && node.deploys.length > 0 && <MergeForm key={node.name} projectId={projectId} branch={node.name} trunk={trunk} today={today} />}
         </div>
       )}
       {deploys.length > 0 && (
