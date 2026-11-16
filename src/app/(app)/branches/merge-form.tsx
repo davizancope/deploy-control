@@ -8,10 +8,11 @@ import { saveBranchMerge } from './actions'
  * Formulário para registrar que a branch chegou na master (ou em outro destino).
  * @param props.projectId Projeto da branch.
  * @param props.branch Branch que foi mesclada.
+ * @param props.trunk Tronco do projeto, sugerido como destino.
  * @param props.today Data de hoje em ISO, sugerida como data do merge.
  * @returns Formulário compacto do painel da branch.
  */
-export function MergeForm({ projectId, branch, today }: { projectId: string; branch: string; today: string }) {
+export function MergeForm({ projectId, branch, trunk, today }: { projectId: string; branch: string; trunk: string; today: string }) {
   const { state, onSubmit, pending } = useFormAction(saveBranchMerge)
   const err = state.fieldErrors ?? {}
   return (
@@ -22,7 +23,7 @@ export function MergeForm({ projectId, branch, today }: { projectId: string; bra
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label" htmlFor="merge-target">Destino</label>
-          <input className="field code" id="merge-target" name="target_branch" defaultValue="master" spellCheck={false} />
+          <input className="field code" id="merge-target" name="target_branch" defaultValue={trunk} spellCheck={false} />
           <FieldError message={err.target_branch} />
         </div>
         <div>

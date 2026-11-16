@@ -73,6 +73,18 @@ export function plural(n: number, one: string, many: string): string {
 }
 
 /**
+ * Rótulo curto de um PR para chips e listas.
+ * @param number Número do PR, quando conhecido.
+ * @param url Endereço do PR, usado quando não há número.
+ * @returns Ex.: "PR #42"; sem número, "PR" seguido do último trecho da URL.
+ */
+export function prLabel(number: number | null, url: string): string {
+  if (number) return `PR #${number}`
+  const tail = url.split(/[?#]/)[0].split('/').filter(Boolean).pop()
+  return tail ? `PR ${tail}` : 'PR'
+}
+
+/**
  * Mediana de uma lista de números.
  * @param values Valores.
  * @returns Mediana ou null para lista vazia.
