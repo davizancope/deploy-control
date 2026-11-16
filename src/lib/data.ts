@@ -1,7 +1,7 @@
 import 'server-only'
 import { DEFAULT_MESSAGE_TEMPLATE } from '@/lib/release-message'
 import type { AppContext } from '@/lib/session'
-import type { DeployType, Environment, LinkedCommit, LinkedPr } from '@/lib/types'
+import type { DeployType, Environment, LinkedCommit, LinkedPr, PrMetadata } from '@/lib/types'
 
 export type Project = {
   id: string
@@ -24,6 +24,8 @@ export type DeployListItem = {
   type: DeployType
   task_count: number
   pr_count: number
+  /** Quantos PRs do deploy levam metadados para importar. */
+  metadata_pr_count: number
 }
 
 export type DeployDetail = {
@@ -43,7 +45,7 @@ export type DeployDetail = {
   updated_at: string
   created_by: string | null
   tasks: string[]
-  pull_requests: Array<LinkedPr & { id: string }>
+  pull_requests: Array<LinkedPr & PrMetadata & { id: string }>
   commits: Array<LinkedCommit & { id: string }>
   project: Project
   author: string | null
@@ -103,7 +105,7 @@ export async function listDeploys(ctx: AppContext, f: DeployFilters): Promise<{ 
   let query = ctx.supabase
     .from('deployments')
     .select(
-      'id, project_id, code_version, branch, environment, deployed_on, sprint, type, projects!inner(name), deployment_tasks(count), deployment_pull_requests(count)',
+      'id, project_id, code_version, branch, environment, deployed_on, sprint, type, projects!inner(name), deployment_tasks(count), deployment_pull_requests(has_metadata_import)',
     )
     .eq('org_id', ctx.org.id)
     .eq('projects.archived', false)
@@ -131,17 +133,18 @@ export async function listDeploys(ctx: AppContext, f: DeployFilters): Promise<{ 
   const { data, error } = await query
   if (error) throw new Error(`Erro ao carregar deploys: ${error.message}`)
   const rows = (data ?? []) as unknown as Array<
-    Omit<DeployListItem, 'project_name' | 'task_count' | 'pr_count'> & {
+    Omit<DeployListItem, 'project_name' | 'task_count' | 'pr_count' | 'metadata_pr_count'> & {
       projects: { name: string } | null
       deployment_tasks: { count: number }[]
-      deployment_pull_requests: { count: number }[]
+      deployment_pull_requests: { has_metadata_import: boolean }[]
     }
   >
   const items = rows.slice(0, PAGE_SIZE).map(({ projects, deployment_tasks, deployment_pull_requests, ...d }) => ({
     ...d,
     project_name: projects?.name ?? '—',
     task_count: deployment_tasks?.[0]?.count ?? 0,
-    pr_count: deployment_pull_requests?.[0]?.count ?? 0,
+    pr_count: deployment_pull_requests?.length ?? 0,
+    metadata_pr_count: deployment_pull_requests?.filter((l) => l.has_metadata_import).length ?? 0,
   }))
   return { items, hasMore: rows.length > PAGE_SIZE }
 }
@@ -172,7 +175,7 @@ export async function getDeploy(ctx: AppContext, id: string): Promise<DeployDeta
        import_batch_id, created_at, updated_at, created_by,
        projects(id, name, jira_base_url, jira_project_prefix, repo_url, archived),
        deployment_tasks(task_key),
-       deployment_pull_requests(pull_requests(id, url, number, description, no_task, pull_request_tasks(task_key))),
+       deployment_pull_requests(has_metadata_import, metadata_import_path, pull_requests(id, url, number, description, no_task, pull_request_tasks(task_key))),
        deployment_commits(cherry_pick, commits(id, sha, description, no_task, commit_tasks(task_key)))`,
     )
     .eq('org_id', ctx.org.id)
@@ -185,6 +188,8 @@ export async function getDeploy(ctx: AppContext, id: string): Promise<DeployDeta
     projects: Project
     deployment_tasks: { task_key: string }[]
     deployment_pull_requests: Array<{
+      has_metadata_import: boolean
+      metadata_import_path: string | null
       pull_requests: { id: string; url: string; number: number | null; description: string | null; no_task: boolean; pull_request_tasks: { task_key: string }[] }
     }>
     deployment_commits: Array<{
@@ -205,7 +210,9 @@ export async function getDeploy(ctx: AppContext, id: string): Promise<DeployDeta
     project: projects,
     tasks: deployment_tasks.map((t) => t.task_key).sort(compareTaskKeys),
     pull_requests: deployment_pull_requests
-      .map(({ pull_requests: p }) => ({
+      .map(({ pull_requests: p, has_metadata_import, metadata_import_path }) => ({
+        has_metadata_import,
+        metadata_import_path,
         id: p.id,
         url: p.url,
         number: p.number,

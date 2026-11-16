@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { EnvMark, TypeBadge } from '@/components/ui'
+import { EnvMark, MetadataBadge, TypeBadge } from '@/components/ui'
 import { listDeploys, listProjects, type DeployFilters } from '@/lib/data'
 import { formatDayHeading, plural } from '@/lib/format'
 import { requireContext } from '@/lib/session'
 import type { DeployType, Environment } from '@/lib/types'
+import { DeployFilterBar } from './filter-bar'
 
 export const metadata: Metadata = { title: 'Deploys' }
 
@@ -47,48 +48,11 @@ export default async function DeploysPage({ searchParams }: PageProps<'/deploys'
         {ctx.canWrite && <Link href="/deploys/novo" className="btn-primary">Registrar deploy</Link>}
       </header>
 
-      <form className="mb-8 grid gap-3 glass rounded-2xl p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1.2fr_1fr_1fr_1fr_1fr_auto]" role="search">
-        <div>
-          <label className="label" htmlFor="q">Code version, branch ou task</label>
-          <input className="field code" id="q" name="q" defaultValue={filters.q} placeholder="release_4_2 ou ABC-123" />
-        </div>
-        <div>
-          <label className="label" htmlFor="projeto">Projeto</label>
-          <select className="field" id="projeto" name="projeto" defaultValue={filters.project ?? ''}>
-            <option value="">Todos</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="label" htmlFor="ambiente">Ambiente</label>
-          <select className="field" id="ambiente" name="ambiente" defaultValue={filters.env ?? ''}>
-            <option value="">Todos</option>
-            <option value="staging">Staging</option>
-            <option value="production">Produção</option>
-          </select>
-        </div>
-        <div>
-          <label className="label" htmlFor="tipo">Tipo</label>
-          <select className="field" id="tipo" name="tipo" defaultValue={filters.type ?? ''}>
-            <option value="">Todos</option>
-            <option value="release">Release</option>
-            <option value="hotfix">Hotfix</option>
-            <option value="bugfix">Bugfix</option>
-          </select>
-        </div>
-        <div>
-          <label className="label" htmlFor="de">De</label>
-          <input className="field" id="de" name="de" type="date" defaultValue={filters.from} />
-        </div>
-        <div>
-          <label className="label" htmlFor="ate">Até</label>
-          <input className="field" id="ate" name="ate" type="date" defaultValue={filters.to} />
-        </div>
-        <div className="flex items-end gap-2">
-          <button type="submit" className="btn-quiet">Filtrar</button>
-          {filtered && <Link href="/deploys" className="btn px-2 text-ink-2 hover:text-ink">Limpar</Link>}
-        </div>
-      </form>
+      <DeployFilterBar
+        values={{ q: filters.q ?? '', projeto: filters.project ?? '', ambiente: filters.env ?? '', tipo: filters.type ?? '', de: filters.from ?? '', ate: filters.to ?? '' }}
+        projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+        filtered={filtered}
+      />
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center">
@@ -124,7 +88,10 @@ export default async function DeploysPage({ searchParams }: PageProps<'/deploys'
                         <span className="sr-only">{d.environment === 'production' ? 'Produção' : 'Staging'}</span>
                       </span>
                       <span className="col-start-2 row-start-1 min-w-0 sm:col-start-auto sm:row-start-auto">
-                        <span className="code block truncate font-medium">{d.code_version}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="code truncate font-medium">{d.code_version}</span>
+                          {d.metadata_pr_count > 0 && <MetadataBadge count={d.metadata_pr_count} />}
+                        </span>
                         <span className="code block truncate text-sm text-muted">{d.branch ?? '—'}</span>
                       </span>
                       <span className="col-start-2 row-start-2 min-w-0 truncate text-sm text-ink-2 sm:col-start-auto sm:row-start-auto">{d.project_name}{d.sprint ? `, sprint ${d.sprint}` : ''}</span>

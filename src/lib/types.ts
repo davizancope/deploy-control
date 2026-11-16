@@ -10,6 +10,9 @@ export type TaskLink = { tasks: string[]; no_task: boolean; description: string 
 export type LinkedPr = PrLink & TaskLink
 export type LinkedCommit = CommitLink & TaskLink
 
+/** Metadados que o PR leva neste deploy, para importar no Business Manager; o caminho só existe quando marcado. */
+export type PrMetadata = { has_metadata_import: boolean; metadata_import_path: string | null }
+
 /** Deploy já normalizado, no formato que as RPCs save_deployment/import_deployments esperam. */
 export type DeployInput = {
   project_id: string
@@ -23,7 +26,7 @@ export type DeployInput = {
   merged_branches: string[]
   notes: string | null
   tasks: string[]
-  pull_requests: LinkedPr[]
+  pull_requests: Array<LinkedPr & PrMetadata>
   commits: LinkedCommit[]
   /** replace: o vínculo informado substitui o anterior (formulário); merge: só acrescenta (importação). */
   link_mode: 'replace' | 'merge'

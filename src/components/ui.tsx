@@ -3,6 +3,7 @@
 import { useFormStatus } from 'react-dom'
 import { Flash } from '@/components/flash'
 import { Icon } from '@/components/icons'
+import { plural } from '@/lib/format'
 import { ENVIRONMENT_LABEL, TYPE_LABEL, type DeployType, type Environment } from '@/lib/types'
 
 /**
@@ -90,6 +91,22 @@ const TYPE_TONE: Record<DeployType, { chip: string; icon: string }> = {
   release: { chip: 'bg-release-soft', icon: 'text-release' },
   bugfix: { chip: 'bg-bugfix-soft', icon: 'text-bugfix' },
   hotfix: { chip: 'bg-hotfix-soft', icon: 'text-hotfix' },
+}
+
+/**
+ * Etiqueta de deploy com PRs que levam metadados para importar no Business Manager.
+ * @param props.count Quantos PRs do deploy têm metadados; com mais de um, o número aparece na etiqueta.
+ * @returns Etiqueta em tom de aviso.
+ */
+export function MetadataBadge({ count = 1 }: { count?: number }) {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-warn-soft px-2.5 py-0.5 text-xs font-semibold text-warn"
+      title={`${plural(count, 'PR leva', 'PRs levam')} metadados para importar`}
+    >
+      Metadados{count > 1 ? ` ×${count}` : ''}
+    </span>
+  )
 }
 
 function EnvBadge({ env }: { env: Environment }) {

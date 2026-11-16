@@ -16,6 +16,7 @@ na ordem do nome, e clique em **Run** (um por vez). Cada um deve terminar com "S
 - `20261023000000_init.sql`: esquema inicial.
 - `20261023020000_pr_task_links.sql`: PRs e commits ligados às tasks.
 - `20261023030000_deploy_message_template.sql`: modelo da mensagem ao time (página **Mensagem ao time**).
+- `20261116000000_deploy_metadata_import.sql`: deploy com metadados para importar (flag + caminho), exibido como etiqueta na lista.
 
 ### 2. Configurar os links de e-mail
 

@@ -1,11 +1,11 @@
 import { mergeLinks, pairColumns } from '@/lib/parse/changes'
 import { extractTokens } from '@/lib/parse/tokens'
-import type { LinkedCommit, LinkedPr } from '@/lib/types'
+import type { LinkedCommit, LinkedPr, PrMetadata } from '@/lib/types'
 
-/** Uma linha do formulário: o PR ou commit, as tasks dele e a descrição (obrigatória quando não há task). */
-export type ChangeRow = { ref: string; tasks: string; description: string }
+/** Uma linha do formulário: o PR ou commit, as tasks dele e a descrição (obrigatória quando não há task); metadados só valem para PR. */
+export type ChangeRow = { ref: string; tasks: string; description: string; has_metadata?: boolean; metadata_path?: string }
 
-export type ParsedRows = { pullRequests: LinkedPr[]; commits: LinkedCommit[]; tasks: string[]; errors: string[] }
+export type ParsedRows = { pullRequests: Array<LinkedPr & PrMetadata>; commits: LinkedCommit[]; tasks: string[]; errors: string[] }
 
 export const emptyRow = (): ChangeRow => ({ ref: '', tasks: '', description: '' })
 
@@ -17,7 +17,7 @@ export const emptyRow = (): ChangeRow => ({ ref: '', tasks: '', description: '' 
  * @returns PRs, commits, todas as tasks do deploy e erros por linha.
  */
 export function parseChangeRows(rows: ChangeRow[], repoUrl: string | null, jiraPrefix: string | null = null): ParsedRows {
-  const pullRequests: LinkedPr[] = []
+  const pullRequests: Array<LinkedPr & PrMetadata> = []
   const commits: LinkedCommit[] = []
   const tasks: string[] = []
   const errors: string[] = []
@@ -26,6 +26,8 @@ export function parseChangeRows(rows: ChangeRow[], repoUrl: string | null, jiraP
     const ref = row.ref.trim()
     const taskText = row.tasks.trim()
     const description = row.description.trim().slice(0, 300) || null
+    const wantsMetadata = Boolean(row.has_metadata)
+    const metadataPath = (row.metadata_path ?? '').trim().slice(0, 500) || null
     if (!ref && !taskText && !description) return
     const n = i + 1
 
@@ -40,6 +42,7 @@ export function parseChangeRows(rows: ChangeRow[], repoUrl: string | null, jiraP
 
     if (!ref) {
       if (!keys.length) errors.push(`Linha ${n}: informe o PR, o commit ou a task.`)
+      if (wantsMetadata) errors.push(`Linha ${n}: metadados são do PR. Informe o PR ou desmarque a opção.`)
       return
     }
 
@@ -57,13 +60,27 @@ export function parseChangeRows(rows: ChangeRow[], repoUrl: string | null, jiraP
       return
     }
 
+    if (wantsMetadata && r.pullRequests.length === 0) {
+      errors.push(`Linha ${n}: só PR leva metadados. Desmarque a opção nesta linha.`)
+      return
+    }
+    if (wantsMetadata && !metadataPath) {
+      errors.push(`Linha ${n}: informe o caminho do import dos metadados.`)
+      return
+    }
+
     const link = { tasks: keys, no_task: keys.length === 0, description }
-    pullRequests.push(...r.pullRequests.map((p) => ({ ...p, ...link, tasks: [...keys] })))
+    const metadata: PrMetadata = { has_metadata_import: wantsMetadata, metadata_import_path: wantsMetadata ? metadataPath : null }
+    pullRequests.push(...r.pullRequests.map((p) => ({ ...p, ...link, ...metadata, tasks: [...keys] })))
     commits.push(...r.commits.map((c) => ({ ...c, ...link, tasks: [...keys] })))
   })
 
+  // O mesmo PR em duas linhas vira um só; a marcação de metadados de qualquer uma das linhas vale.
+  const marked = new Map<string, PrMetadata>()
+  for (const p of pullRequests) if (p.has_metadata_import && !marked.has(p.url)) marked.set(p.url, { has_metadata_import: true, metadata_import_path: p.metadata_import_path })
+
   return {
-    pullRequests: mergeLinks(pullRequests, (p) => p.url),
+    pullRequests: mergeLinks(pullRequests, (p) => p.url).map((p) => ({ ...p, ...(marked.get(p.url) ?? { has_metadata_import: false, metadata_import_path: null }) })),
     commits: mergeLinks(commits, (c) => c.sha),
     tasks: [...new Set(tasks)],
     errors,

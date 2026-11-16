@@ -57,7 +57,7 @@ export function rowsFromDeploy(d: DeployDetail): ChangeRow[] {
   const rows: ChangeRow[] = []
   for (const p of d.pull_requests) {
     p.tasks.forEach((t) => covered.add(t))
-    rows.push({ ref: p.url, tasks: p.tasks.join(' '), description: p.description ?? '' })
+    rows.push({ ref: p.url, tasks: p.tasks.join(' '), description: p.description ?? '', has_metadata: p.has_metadata_import, metadata_path: p.metadata_import_path ?? '' })
   }
   for (const c of d.commits) {
     c.tasks.forEach((t) => covered.add(t))
