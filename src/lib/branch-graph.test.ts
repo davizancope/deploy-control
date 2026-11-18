@@ -76,7 +76,7 @@ function scenario() {
       d('r42a', 'release/4.2.0', '2026-10-12', { source_branch: 'master' }),
       d('r42b', 'release/4.2.0', '2026-10-24', { source_branch: 'master', merged_branches: ['bugfix/promo'] }),
       d('r42c', 'release/4.2.0', '2026-10-28', { source_branch: 'master', environment: 'production' }),
-      d('hf1', 'hotfix/checkout', '2026-10-19', { source_branch: 'master', type: 'hotfix' }),
+      d('hf1', 'hotfix/checkout', '2026-10-20', { source_branch: 'master', type: 'hotfix' }),
       d('hf2', 'hotfix/checkout', '2026-10-21', { source_branch: 'master', type: 'hotfix', environment: 'production' }),
       d('bf1', 'bugfix/promo', '2026-10-18', { source_branch: 'release/4.2.0', type: 'bugfix' }),
       d('hr1', 'hotfix/arredonda', '2026-10-21', { source_branch: 'bugfix/promo', type: 'hotfix' }),
@@ -118,7 +118,7 @@ describe('layoutBranchTimeline', () => {
   it('desenha o merge na master até o tronco e marca a data', () => {
     const link = t.links.find((l) => l.kind === 'merge' && l.lane === 'release/4.1.0')!
     expect(link.arrow).toBe(true)
-    expect(link.d.endsWith(' 0')).toBe(true)
+    expect(link.d.endsWith('V12')).toBe(true)
     expect(t.merges.map((x) => x.label)).toEqual(['14/10', '23/10', '27/10', '30/10'])
     const node = t.merges.find((x) => x.branch === 'release/4.1.0')!
     expect(lane('release/4.1.0').xEnd).toBeLessThan(node.x)
@@ -290,5 +290,37 @@ describe('datas de merge próximas', () => {
     )
     const t = layoutBranchTimeline(g, { today: TODAY })
     expect(t.merges.map((x) => [x.showLabel, x.level])).toEqual([[true, 0], [true, 1], [true, 0]])
+  })
+})
+
+describe('merge no mesmo dia do fork', () => {
+  it('liga direto na bolinha do tronco, sem sair antes do começo da raia', () => {
+    const g = buildBranchGraph(
+      [d('a', 'pre-release/5.7.0', '2026-11-10', { source_branch: 'master' }), d('b', 'hotfix/5.7.1', '2026-11-18', { source_branch: 'pre-release/5.7.0', type: 'hotfix', environment: 'production' })],
+      [m('1', 'hotfix/5.7.1', '2026-11-18')],
+    )
+    const t = layoutBranchTimeline(g, { today: '2026-11-18' })
+    const lane = t.lanes.find((l) => l.name === 'hotfix/5.7.1')!
+    const link = t.links.find((l) => l.kind === 'merge')!
+    const dot = t.merges[0]
+    expect(Number(link.d.match(/^M(\d+(?:\.\d+)?) /)![1])).toBeGreaterThanOrEqual(lane.xStart)
+    expect(link.d.endsWith(`${dot.x} 12`)).toBe(true)
+    expect(dot.x).toBe(t.todayX)
+  })
+})
+
+describe('nome de raia cruzada por outra seta', () => {
+  it('passa para depois da linha que cruza, em vez de ficar escondendo-a', () => {
+    const g = buildBranchGraph(
+      [
+        d('a', 'pre-release/5.6.0', '2026-10-20', { source_branch: 'master' }),
+        d('b', 'pre-release/5.7.0', '2026-10-26', { source_branch: 'master' }),
+        d('c', 'hotfix/5.7.1', '2026-11-18', { source_branch: 'pre-release/5.7.0', type: 'hotfix', environment: 'production' }),
+      ],
+      [m('1', 'pre-release/5.6.0', '2026-11-16'), m('2', 'hotfix/5.7.1', '2026-11-18')],
+    )
+    const t = layoutBranchTimeline(g, { today: '2026-11-18' })
+    const lane = t.lanes.find((l) => l.name === 'pre-release/5.6.0')!
+    expect(lane.label.x).toBeGreaterThan(t.todayX)
   })
 })

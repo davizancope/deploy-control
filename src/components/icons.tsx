@@ -1,9 +1,9 @@
 import { useId } from 'react'
 import type { DeployType, Environment } from '@/lib/types'
 
-export type IconName = Environment | DeployType | 'merge' | 'eye' | 'eye-off' | 'check'
+export type IconName = Environment | DeployType | 'merge' | 'eye' | 'eye-off' | 'check' | 'close'
 
-/* Traçados em grade 24x24, contorno de 1,75: staging = frasco, produção = foguete, merge = ramal que se junta, release = pacote, bugfix = inseto, hotfix = chama, eye/eye-off = mostrar/ocultar, check = confirmado. */
+/* Traçados em grade 24x24, contorno de 1,75: staging = frasco, produção = foguete, merge = ramal que se junta, release = pacote, bugfix = inseto, hotfix = chama, eye/eye-off = mostrar/ocultar, check = confirmado, close = fechar. */
 const PATHS: Record<IconName, string[]> = {
   staging: [
     'M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2',
@@ -28,6 +28,7 @@ const PATHS: Record<IconName, string[]> = {
     'm2 2 20 20',
   ],
   check: ['M20 6 9 17l-5-5'],
+  close: ['M18 6 6 18', 'm6 6 12 12'],
   merge: ['M15 18a3 3 0 1 0 6 0 3 3 0 1 0-6 0', 'M3 6a3 3 0 1 0 6 0 3 3 0 1 0-6 0', 'M6 21V9a9 9 0 0 0 9 9'],
   release: ['M12 2.8 20 7.2v9.6L12 21.2 4 16.8V7.2z', 'm4 7.2 8 4.4 8-4.4', 'M12 11.6v9.6'],
   bugfix: [
