@@ -5,6 +5,7 @@ import { formatDate, plural } from '@/lib/format'
 import { requireContext } from '@/lib/session'
 import { toggleArchive } from './actions'
 import { Flash } from '@/components/flash'
+import { SubmitButton } from '@/components/ui'
 import { DeleteProjectForm } from './delete-project-form'
 import { ProjectForm } from './project-form'
 
@@ -103,7 +104,9 @@ function ProjectList({ projects, stats, canManage }: { projects: Project[]; stat
                   <form action={toggleArchive}>
                     <input type="hidden" name="id" value={p.id} />
                     <input type="hidden" name="archived" value={String(p.archived)} />
-                    <button type="submit" className="link text-sm">{p.archived ? 'Reativar projeto' : 'Arquivar projeto'}</button>
+                    <SubmitButton className="link inline-flex items-center gap-2 text-sm" pending={p.archived ? 'Reativando…' : 'Arquivando…'}>
+                      {p.archived ? 'Reativar projeto' : 'Arquivar projeto'}
+                    </SubmitButton>
                   </form>
                   <DeleteProjectForm id={p.id} name={p.name} deploys={s?.deploys ?? 0} />
                 </div>

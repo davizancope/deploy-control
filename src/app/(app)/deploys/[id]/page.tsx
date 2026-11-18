@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CopyButton, CopyIconButton } from '@/components/copy-button'
 import { Flash } from '@/components/flash'
-import { EnvBadge, EnvMark, MetadataBadge, TypeBadge } from '@/components/ui'
+import { EnvBadge, EnvMark, MetadataBadge, SubmitButton, TypeBadge } from '@/components/ui'
 import { getDeploy, getMessageTemplate, type DeployDetail } from '@/lib/data'
 import { daysBetween, formatDate, formatDayHeading, plural } from '@/lib/format'
 import { markdownToHtml, messageVars, renderTemplate, taskUrls } from '@/lib/release-message'
@@ -88,7 +88,7 @@ export default async function DeployPage({ params, searchParams }: PageProps<'/d
               <form action={deleteDeploy} className="absolute z-10 mt-2 w-72 glass-pop rounded-2xl p-4">
                 <input type="hidden" name="id" value={d.id} />
                 <p className="mb-3 text-sm">Excluir <span className="code">{d.code_version}</span> e as tasks, PRs e commits ligados a ele?</p>
-                <button type="submit" className="btn-danger w-full">Excluir deploy</button>
+                <SubmitButton className="btn-danger w-full" pending="Excluindo…">Excluir deploy</SubmitButton>
               </form>
             </details>
           </div>

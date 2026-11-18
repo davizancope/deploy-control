@@ -48,9 +48,9 @@ export const getMyOrgs = cache(async (): Promise<OrgSummary[]> => {
 export const requireContext = cache(async () => {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
-  const orgs = await getMyOrgs()
+  const [orgs, cookieStore] = await Promise.all([getMyOrgs(), cookies()])
   if (orgs.length === 0) redirect('/onboarding')
-  const wanted = (await cookies()).get(ORG_COOKIE)?.value
+  const wanted = cookieStore.get(ORG_COOKIE)?.value
   const org = orgs.find((o) => o.id === wanted) ?? orgs[0]
   return {
     supabase: user.supabase,

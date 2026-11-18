@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { FilterForm } from '@/components/filter-form'
 import { compareTaskKeys, listProjects, projectIdsFilter } from '@/lib/data'
 import { formatDate, plural } from '@/lib/format'
 import { requireContext } from '@/lib/session'
@@ -83,7 +84,7 @@ export default async function LinkPage({ searchParams }: PageProps<'/vincular'>)
         </p>
       </header>
 
-      <form className="mb-6 flex items-end gap-2">
+      <FilterForm className="mb-6 flex items-end gap-2">
         <div>
           <label className="label" htmlFor="projeto">Projeto</label>
           <select id="projeto" name="projeto" defaultValue={projectId} className="field w-auto">
@@ -92,7 +93,7 @@ export default async function LinkPage({ searchParams }: PageProps<'/vincular'>)
           </select>
         </div>
         <button type="submit" className="btn-quiet">Filtrar</button>
-      </form>
+      </FilterForm>
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center">

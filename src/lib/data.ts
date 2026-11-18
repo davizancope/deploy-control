@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { DEFAULT_MESSAGE_TEMPLATE } from '@/lib/release-message'
 import type { RefPr } from '@/lib/deploy-refs'
 import type { AppContext } from '@/lib/session'
@@ -64,22 +65,25 @@ export type DeployFilters = {
 
 export const PAGE_SIZE = 60
 
+const loadProjects = cache(async (ctx: AppContext): Promise<Project[]> => {
+  const { data, error } = await ctx.supabase
+    .from('projects')
+    .select('id, name, jira_base_url, jira_project_prefix, repo_url, archived')
+    .eq('org_id', ctx.org.id)
+    .order('name')
+  if (error) throw new Error(`Erro ao carregar projetos: ${error.message}`)
+  return (data ?? []) as Project[]
+})
+
 /**
- * Projetos da organização ativa.
+ * Projetos da organização ativa; uma única consulta por requisição, compartilhada entre layout e página.
  * @param ctx Contexto da requisição.
  * @param includeArchived Inclui projetos arquivados.
  * @returns Lista ordenada por nome.
  */
 export async function listProjects(ctx: AppContext, includeArchived = false): Promise<Project[]> {
-  let query = ctx.supabase
-    .from('projects')
-    .select('id, name, jira_base_url, jira_project_prefix, repo_url, archived')
-    .eq('org_id', ctx.org.id)
-    .order('name')
-  if (!includeArchived) query = query.eq('archived', false)
-  const { data, error } = await query
-  if (error) throw new Error(`Erro ao carregar projetos: ${error.message}`)
-  return (data ?? []) as Project[]
+  const all = await loadProjects(ctx)
+  return includeArchived ? [...all] : all.filter((p) => !p.archived)
 }
 
 const NO_ROWS_ID = '00000000-0000-0000-0000-000000000000'
@@ -315,22 +319,35 @@ export async function latestVersionByProject(ctx: AppContext): Promise<Record<st
 }
 
 /**
- * Busca todas as páginas de uma consulta (o Supabase devolve no máximo 1000 linhas por vez).
+ * Busca todas as páginas de uma consulta (o Supabase devolve no máximo 1000 linhas por vez); a primeira vai sozinha e, se vier cheia, as seguintes saem em lotes paralelos.
  * @param page Função que monta a consulta para o intervalo [from, to].
  * @param max Limite de segurança de linhas.
- * @returns Todas as linhas.
+ * @param concurrency Quantas páginas buscar ao mesmo tempo depois da primeira.
+ * @returns Todas as linhas, na ordem da consulta.
  */
 export async function fetchAllPages<T>(
   page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
   max = 20000,
+  concurrency = 4,
 ): Promise<T[]> {
   const size = 1000
-  const rows: T[] = []
-  for (let from = 0; from < max; from += size) {
-    const { data, error } = await page(from, from + size - 1)
-    if (error) throw new Error(error.message)
-    rows.push(...(data ?? []))
-    if (!data || data.length < size) break
+  const first = await page(0, size - 1)
+  if (first.error) throw new Error(first.error.message)
+  const rows: T[] = [...(first.data ?? [])]
+  if (rows.length < size) return rows
+  for (let from = size; from < max; from += size * concurrency) {
+    const starts = Array.from({ length: concurrency }, (_, i) => from + i * size).filter((start) => start < max)
+    const batch = await Promise.all(starts.map((start) => page(start, start + size - 1)))
+    let done = false
+    for (const { data, error } of batch) {
+      if (error) throw new Error(error.message)
+      rows.push(...(data ?? []))
+      if (!data || data.length < size) {
+        done = true
+        break
+      }
+    }
+    if (done) break
   }
   return rows
 }
