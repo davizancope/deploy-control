@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Flash } from '@/components/flash'
+import { SubmitButton } from '@/components/ui'
 import { listProjects } from '@/lib/data'
 import { formatDate, plural } from '@/lib/format'
 import { requireContext } from '@/lib/session'
@@ -57,7 +58,7 @@ export default async function ImportPage({ searchParams }: PageProps<'/importar'
                   <form action={undoImport} className="absolute right-0 z-10 mt-2 w-72 glass-pop rounded-2xl p-4">
                     <input type="hidden" name="id" value={b.id} />
                     <p className="mb-3 text-sm">Remove os {b.row_count} deploys desta importação. Os projetos continuam.</p>
-                    <button type="submit" className="btn-danger w-full">Desfazer importação</button>
+                    <SubmitButton className="btn-danger w-full" pending="Desfazendo…">Desfazer importação</SubmitButton>
                   </form>
                 </details>
               </li>

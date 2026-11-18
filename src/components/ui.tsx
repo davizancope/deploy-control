@@ -3,11 +3,12 @@
 import { useFormStatus } from 'react-dom'
 import { Flash } from '@/components/flash'
 import { Icon } from '@/components/icons'
+import { Spinner } from '@/components/spinner'
 import { plural } from '@/lib/format'
 import { ENVIRONMENT_LABEL, TYPE_LABEL, type DeployType, type Environment } from '@/lib/types'
 
 /**
- * Botão de envio que desabilita e troca o texto enquanto a Server Action roda.
+ * Botão de envio que desabilita, mostra um spinner e troca o texto enquanto a Server Action roda.
  * @param props.children Texto normal do botão.
  * @param props.pending Texto exibido durante o envio.
  * @param props.busy Estado de envio vindo de fora (useFormAction); sem ele usa o useFormStatus.
@@ -29,6 +30,7 @@ export function SubmitButton({
   const isBusy = busy ?? status.pending
   return (
     <button type="submit" className={className} disabled={isBusy} aria-busy={isBusy}>
+      {isBusy && <Spinner />}
       {isBusy ? (pending ?? 'Salvando…') : children}
     </button>
   )

@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
+import Link, { useLinkStatus } from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Spinner } from '@/components/spinner'
 
 const ITEMS = [
   { href: '/', label: 'Painel', match: (p: string) => p === '/' },
@@ -12,6 +13,15 @@ const ITEMS = [
   { href: '/importar', label: 'Importar planilha', match: (p: string) => p.startsWith('/importar') },
   { href: '/mensagem-time', label: 'Mensagem ao time', match: (p: string) => p.startsWith('/mensagem-time') },
 ]
+
+/**
+ * Spinner do link: fica sempre montado (posição absoluta, sem mexer no layout) e só aparece enquanto a navegação está pendente.
+ * @returns Indicador decorativo dentro do Link.
+ */
+function LinkPending() {
+  const { pending } = useLinkStatus()
+  return <Spinner size={13} className={`absolute top-1/2 right-3 -translate-y-1/2 transition-opacity ${pending ? 'opacity-100' : 'opacity-0'}`} />
+}
 
 export function Nav({ pendingLinks }: { pendingLinks: number }) {
   const pathname = usePathname()
@@ -24,7 +34,7 @@ export function Nav({ pendingLinks }: { pendingLinks: number }) {
             key={item.href}
             href={item.href}
             aria-current={active ? 'page' : undefined}
-            className={`whitespace-nowrap rounded-full px-3.5 py-2 text-[15px] transition-colors ${
+            className={`relative whitespace-nowrap rounded-full px-3.5 py-2 text-[15px] transition-colors ${
               active ? 'lift font-medium text-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink'
             }`}
           >
@@ -32,6 +42,7 @@ export function Nav({ pendingLinks }: { pendingLinks: number }) {
             {item.href === '/vincular' && pendingLinks > 0 && (
               <span className="ml-2 rounded-full bg-warn-soft px-1.5 text-xs font-semibold text-warn">{pendingLinks}</span>
             )}
+            <LinkPending />
           </Link>
         )
       })}

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AutoSubmitSelect } from '@/components/auto-submit-select'
+import { FilterForm } from '@/components/filter-form'
 import { BranchMap } from '@/components/charts/branch-map'
 import { Icon } from '@/components/icons'
-import { EnvMark, TypeBadge, TypeMark } from '@/components/ui'
+import { EnvMark, SubmitButton, TypeBadge, TypeMark } from '@/components/ui'
 import { buildBranchGraph, layoutBranchTimeline, type BranchDeploy, type BranchGraph, type BranchMerge, type BranchNode } from '@/lib/branch-graph'
 import { fetchAllPages, listProjects } from '@/lib/data'
 import { addDays, formatDate, plural } from '@/lib/format'
@@ -43,24 +44,26 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
   const selected = typeof sp.branch === 'string' ? sp.branch : ''
   const from = period === 'all' ? null : addDays(todayIso(), -Number(period) + 1)
 
-  const rows = await fetchAllPages((a, b) => {
-    let q = ctx.supabase
-      .from('deployments')
-      .select('id, code_version, branch, source_branch, merged_branches, environment, type, deployed_on')
-      .eq('org_id', ctx.org.id)
-      .eq('project_id', project.id)
-    if (from) q = q.gte('deployed_on', from)
-    return q.order('deployed_on').order('id').range(a, b)
-  })
-  const mergeRows = await fetchAllPages((a, b) =>
-    ctx.supabase
-      .from('branch_merges')
-      .select('id, branch, target_branch, merged_on')
-      .eq('org_id', ctx.org.id)
-      .eq('project_id', project.id)
-      .order('id')
-      .range(a, b),
-  )
+  const [rows, mergeRows] = await Promise.all([
+    fetchAllPages((a, b) => {
+      let q = ctx.supabase
+        .from('deployments')
+        .select('id, code_version, branch, source_branch, merged_branches, environment, type, deployed_on')
+        .eq('org_id', ctx.org.id)
+        .eq('project_id', project.id)
+      if (from) q = q.gte('deployed_on', from)
+      return q.order('deployed_on').order('id').range(a, b)
+    }),
+    fetchAllPages((a, b) =>
+      ctx.supabase
+        .from('branch_merges')
+        .select('id, branch, target_branch, merged_on')
+        .eq('org_id', ctx.org.id)
+        .eq('project_id', project.id)
+        .order('id')
+        .range(a, b),
+    ),
+  ])
   const graph = buildBranchGraph(rows as unknown as BranchDeploy[], mergeRows as unknown as BranchMerge[])
   const timeline = layoutBranchTimeline(graph, { today: todayIso() })
   const node = selected ? graph.nodes.get(selected) : undefined
@@ -77,7 +80,7 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
             De onde cada branch nasceu e quando voltou para a {timeline.trunk} em {project.name}. Clique numa branch para ver o ciclo de vida.
           </p>
         </div>
-        <form className="flex flex-wrap items-center gap-2">
+        <FilterForm className="flex flex-wrap items-center gap-2">
           <label htmlFor="projeto" className="sr-only">Projeto</label>
           <AutoSubmitSelect id="projeto" name="projeto" defaultValue={project.id} className="field w-auto py-1.5">
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -96,7 +99,7 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
             <span className="block cursor-pointer rounded-full border border-line-strong bg-sunken px-3.5 py-1.5 text-sm text-ink-2 peer-checked:lift peer-checked:text-ink peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--focus)]">Só o que falta subir</span>
           </label>
           <button type="submit" className="btn-quiet py-1.5 text-sm">Aplicar</button>
-        </form>
+        </FilterForm>
       </header>
 
       {node && <ClearOnEscape href={clearHref} />}
@@ -225,7 +228,7 @@ function BranchDetail({
                 {canWrite && (
                   <form action={deleteBranchMerge}>
                     <input type="hidden" name="id" value={m.id} />
-                    <button type="submit" className="link text-sm">Desfazer</button>
+                    <SubmitButton className="link inline-flex items-center gap-2 text-sm" pending="Desfazendo…">Desfazer</SubmitButton>
                   </form>
                 )}
               </li>

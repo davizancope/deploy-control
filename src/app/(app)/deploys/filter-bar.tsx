@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useTransition, type FormEvent } from 'react'
+import { Spinner } from '@/components/spinner'
 import { filtersToQuery } from '@/lib/filter-query'
 
 const SEARCH_DEBOUNCE_MS = 400
@@ -114,6 +115,14 @@ export function DeployFilterBar({
       <div className="flex items-end gap-2">
         {/* Sem botão visível, o Enter na busca ainda envia o formulário. */}
         <button type="submit" hidden>Filtrar</button>
+        <span role="status" className="inline-flex size-5 items-center justify-center self-center text-ink-2">
+          {pending && (
+            <>
+              <Spinner size={16} />
+              <span className="sr-only">Carregando…</span>
+            </>
+          )}
+        </span>
         {filtered && (
           <Link href="/deploys" onClick={() => clearTimeout(timer.current)} className="btn px-2 text-ink-2 hover:text-ink">
             Limpar

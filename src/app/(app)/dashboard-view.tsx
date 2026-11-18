@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { AutoSubmitSelect } from '@/components/auto-submit-select'
+import { FilterForm } from '@/components/filter-form'
 import { ReleaseRail } from '@/components/charts/release-rail'
 import { WeeklyBars } from '@/components/charts/weekly-bars'
 import { EnvMark, TypeBadge } from '@/components/ui'
@@ -30,7 +31,7 @@ export function DashboardView({ ins, projects, projectId, period, periods: PERIO
           <h1 className="text-[28px] font-semibold tracking-tight">Painel</h1>
           <p className="text-ink-2">{formatDate(from)} até hoje{projectId ? `, só ${projectName.get(projectId)}` : ', todos os projetos'}.</p>
         </div>
-        <form className="flex flex-wrap items-center gap-2">
+        <FilterForm className="flex flex-wrap items-center gap-2">
           <label htmlFor="projeto" className="sr-only">Projeto</label>
           <AutoSubmitSelect id="projeto" name="projeto" defaultValue={projectId} className="field w-auto py-1.5">
             <option value="">Todos os projetos</option>
@@ -46,7 +47,7 @@ export function DashboardView({ ins, projects, projectId, period, periods: PERIO
             ))}
           </fieldset>
           <button type="submit" className="btn-quiet py-1.5 text-sm">Aplicar</button>
-        </form>
+        </FilterForm>
       </header>
 
       <dl className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">

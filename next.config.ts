@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Planilhas maiores que o limite padrão de 1 MB das Server Actions.
     serverActions: { bodySizeLimit: '6mb' },
+    // Voltar a uma tela visitada há menos de 30 s reaproveita o cache do cliente; mutações invalidam via revalidatePath.
+    staleTimes: { dynamic: 30 },
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
