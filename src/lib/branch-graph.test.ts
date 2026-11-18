@@ -216,3 +216,79 @@ describe('outros destinos e dados incompletos', () => {
     expect(t.height).toBe(8)
   })
 })
+
+describe('cadeia de branches criadas umas das outras', () => {
+  const NOW = '2026-11-17'
+  const chain = () =>
+    buildBranchGraph(
+      [
+        d('a1', 'release/1.7.0', '2026-10-22', { source_branch: 'main' }),
+        d('a2', 'release/1.7.0', '2026-10-28', { source_branch: 'main', environment: 'production' }),
+        d('b1', 'pre-release/1.7.2', '2026-10-26', { source_branch: 'release/1.7.0' }),
+        d('b2', 'pre-release/1.7.2', '2026-11-03', { source_branch: 'release/1.7.0', environment: 'production' }),
+        d('c1', 'hotfix/1.7.3', '2026-11-02', { source_branch: 'pre-release/1.7.2', type: 'hotfix', environment: 'production' }),
+        d('d1', 'release/1.7.4', '2026-11-05', { source_branch: 'hotfix/1.7.3' }),
+        d('d2', 'release/1.7.4', '2026-11-12', { source_branch: 'hotfix/1.7.3', environment: 'production' }),
+      ],
+      [m('m1', 'release/1.7.4', '2026-11-16', 'main')],
+    )
+  const t = layoutBranchTimeline(chain(), { today: NOW })
+  const lane = (name: string) => t.lanes.find((l) => l.name === name)!
+
+  it('empilha cada filha logo abaixo do pai, em escada', () => {
+    expect(Object.fromEntries(t.lanes.map((l) => [l.name, l.index]))).toEqual({
+      'release/1.7.0': 1,
+      'pre-release/1.7.2': 2,
+      'hotfix/1.7.3': 3,
+      'release/1.7.4': 4,
+    })
+  })
+
+  it('só a última volta para o tronco; as outras terminam cobertas e não correm até hoje', () => {
+    expect(t.trunk).toBe('main')
+    expect(['release/1.7.0', 'pre-release/1.7.2', 'hotfix/1.7.3'].map((n) => lane(n).end)).toEqual(['covered', 'covered', 'covered'])
+    expect(lane('release/1.7.4').end).toBe('merged')
+    expect(t.links.filter((l) => l.kind === 'merge').map((l) => l.lane)).toEqual(['release/1.7.4'])
+    for (const n of ['release/1.7.0', 'pre-release/1.7.2', 'hotfix/1.7.3']) expect(lane(n).xEnd).toBeLessThan(t.todayX)
+    expect(lane('release/1.7.0').title).toContain('coberta pelo merge de release/1.7.4 na main')
+  })
+
+  it('põe o nome depois do fim da barra, nunca sobre ela', () => {
+    for (const l of t.lanes) expect(l.label.x).toBeGreaterThan(l.xEnd)
+  })
+})
+
+describe('master e main como o mesmo tronco', () => {
+  const g = buildBranchGraph(
+    [
+      d('a', 'release/1.6.3', '2026-10-20', { source_branch: 'main' }),
+      d('b', 'release/1.7.0', '2026-10-22', { source_branch: 'master' }),
+      d('c', 'release/1.7.1', '2026-10-24', { source_branch: 'main' }),
+    ],
+    [m('1', 'release/1.6.3', '2026-10-22', 'master'), m('2', 'release/1.7.0', '2026-10-30', 'master'), m('3', 'release/1.7.1', '2026-11-03', 'main'), m('4', 'release/1.7.1', '2026-11-04', 'master')],
+  )
+  const t = layoutBranchTimeline(g, { today: TODAY })
+
+  it('escolhe o nome mais usado e liga os merges dos dois nomes ao tronco, sem marcador solto', () => {
+    expect(t.trunk).toBe('master')
+    expect(t.stubs).toEqual([])
+    expect(t.lanes.map((l) => l.end)).toEqual(['merged', 'merged', 'merged'])
+    expect(t.merges).toHaveLength(3)
+  })
+
+  it('trata a origem em qualquer dos dois nomes como saída do tronco', () => {
+    for (const f of t.forks) expect(f.y).toBe(0)
+    expect(t.forks).toHaveLength(3)
+  })
+})
+
+describe('datas de merge próximas', () => {
+  it('alterna o rótulo entre duas linhas antes de escondê-lo', () => {
+    const g = buildBranchGraph(
+      ['x', 'y', 'z'].map((b, i) => d(`d${i}`, b, '2026-10-01', { source_branch: 'main' })),
+      [m('1', 'x', '2026-10-10', 'main'), m('2', 'y', '2026-10-11', 'main'), m('3', 'z', '2026-10-12', 'main')],
+    )
+    const t = layoutBranchTimeline(g, { today: TODAY })
+    expect(t.merges.map((x) => [x.showLabel, x.level])).toEqual([[true, 0], [true, 1], [true, 0]])
+  })
+})

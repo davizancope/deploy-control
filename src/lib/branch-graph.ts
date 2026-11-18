@@ -104,7 +104,7 @@ const LABEL_CHAR = 7.3
 const UNMERGED_DAYS = 14
 
 export type TimelineState = 'staging' | 'production' | 'none'
-export type TimelineEnd = 'merged' | 'included' | 'stub' | 'open' | 'unmerged-prod' | 'cited'
+export type TimelineEnd = 'merged' | 'included' | 'stub' | 'open' | 'unmerged-prod' | 'covered' | 'cited'
 export type TimelineBar = { x1: number; x2: number; state: TimelineState }
 export type TimelineLane = {
   name: string
@@ -123,7 +123,8 @@ export type TimelineLane = {
 }
 export type TimelineLink = { key: string; kind: 'fork' | 'merge' | 'include' | 'stub'; lane: string; target: string; d: string; arrow: boolean }
 export type TimelineStub = { key: string; lane: string; x: number; y: number; text: string }
-export type TimelineMerge = { key: string; branch: string; x: number; label: string; showLabel: boolean }
+/** `level` 0 é a linha de baixo do cabeçalho; 1 é a de cima, usada quando o rótulo vizinho está perto demais. */
+export type TimelineMerge = { key: string; branch: string; x: number; label: string; showLabel: boolean; level: 0 | 1 }
 export type TimelineFork = { key: string; lane: string; x: number; y: number }
 export type TimelineTick = { x: number; label: string }
 export type BranchTimeline = {
@@ -139,8 +140,10 @@ export type BranchTimeline = {
   forks: TimelineFork[]
 }
 
+const TRUNK_NAMES = ['master', 'main']
+
 /**
- * Descobre qual branch é o tronco do projeto: o destino de merge mais registrado, ou master/main quando ainda não há merges.
+ * Descobre qual branch é o tronco do projeto: o destino de merge mais registrado (master e main contam juntas, porque o tronco pode ter trocado de nome), ou master/main quando ainda não há merges.
  * @param graph Grafo já montado.
  * @returns Nome do tronco (master quando nada indica outro).
  */
@@ -148,7 +151,8 @@ export function detectTrunk(graph: BranchGraph): string {
   const counts = new Map<string, number>()
   for (const n of graph.nodes.values()) for (const m of n.merges) counts.set(m.target_branch, (counts.get(m.target_branch) ?? 0) + 1)
   const rank = (name: string) => (name === 'master' ? 0 : name === 'main' ? 1 : 2)
-  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1] || rank(a[0]) - rank(b[0]) || a[0].localeCompare(b[0]))
+  const weight = (name: string) => (TRUNK_NAMES.includes(name) ? TRUNK_NAMES.reduce((sum, t) => sum + (counts.get(t) ?? 0), 0) : (counts.get(name) ?? 0))
+  const ranked = [...counts.entries()].sort((a, b) => weight(b[0]) - weight(a[0]) || b[1] - a[1] || rank(a[0]) - rank(b[0]) || a[0].localeCompare(b[0]))
   if (ranked.length > 0) return ranked[0][0]
   for (const name of ['master', 'main']) if (graph.nodes.has(name)) return name
   return 'master'
@@ -257,7 +261,7 @@ function buildTicks(min: string, max: string, pxPerDay: number, x: (iso: string)
 type MergeLink = { target: string; on: string; kind: 'trunk' | 'include' | 'stub' }
 
 /**
- * Posiciona as branches ligadas num mapa de tempo: o tronco é a linha de cima e cada branch ganha uma raia abaixo da sua origem, reaproveitada depois que a anterior termina.
+ * Posiciona as branches ligadas num mapa de tempo: o tronco é a linha de cima e cada branch ganha uma raia abaixo da sua origem (a filha logo sob o pai, em escada), reaproveitada depois que a anterior termina. O nome fica sempre no fim da barra, longe dos conectores. Master e main contam como o mesmo tronco.
  * @param graph Grafo já montado.
  * @param opts.today Data de hoje (ISO): fim das raias abertas.
  * @param opts.trunk Nome do tronco; quando omitido é descoberto pelos merges.
@@ -266,28 +270,44 @@ type MergeLink = { target: string; on: string; kind: 'trunk' | 'include' | 'stub
 export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; trunk?: string }): BranchTimeline {
   const { today } = opts
   const trunk = opts.trunk ?? detectTrunk(graph)
+  const isTrunk = (n: string) => n === trunk || (TRUNK_NAMES.includes(n) && TRUNK_NAMES.includes(trunk))
   const orphanNames = new Set(graph.orphans.map((n) => n.name))
-  const names = [...graph.nodes.keys()].filter((n) => n !== trunk && !orphanNames.has(n))
+  const names = [...graph.nodes.keys()].filter((n) => !isTrunk(n) && !orphanNames.has(n))
   const inSet = new Set(names)
 
   const parent = new Map<string, string | null>()
   const children = new Map<string, string[]>()
   for (const n of names) {
-    const e = graph.edges.find((x) => x.kind === 'origin' && x.to === n && (x.from === trunk || inSet.has(x.from)))
-    parent.set(n, e ? e.from : null)
-    if (e && e.from !== trunk) children.set(e.from, [...(children.get(e.from) ?? []), n])
+    const e = graph.edges.find((x) => x.kind === 'origin' && x.to === n && (isTrunk(x.from) || inSet.has(x.from)))
+    const from = e ? (isTrunk(e.from) ? trunk : e.from) : null
+    parent.set(n, from)
+    if (from && from !== trunk) children.set(from, [...(children.get(from) ?? []), n])
   }
 
   const outLinks = new Map<string, MergeLink[]>()
   for (const n of names) {
     const found: MergeLink[] = []
     const add = (target: string, on: string) => {
-      if (target === n || found.some((l) => l.target === target)) return
-      found.push({ target, on, kind: target === trunk ? 'trunk' : inSet.has(target) ? 'include' : 'stub' })
+      const kind: MergeLink['kind'] = isTrunk(target) ? 'trunk' : inSet.has(target) ? 'include' : 'stub'
+      if (target === n || found.some((l) => l.target === target || (kind === 'trunk' && l.kind === 'trunk'))) return
+      found.push({ target: kind === 'trunk' ? trunk : target, on, kind })
     }
     for (const m of graph.nodes.get(n)!.merges) add(m.target_branch, m.merged_on)
     for (const e of graph.edges) if (e.kind === 'merge' && e.from === n) add(e.to, e.on)
     outLinks.set(n, found)
+  }
+
+  /** Filha mais próxima que voltou para o tronco: o merge dela leva junto os commits desta branch. */
+  const coveredBy = (n: string): string | null => {
+    const seen = new Set<string>([n])
+    const queue = [...(children.get(n) ?? [])]
+    for (let c = queue.shift(); c !== undefined; c = queue.shift()) {
+      if (seen.has(c)) continue
+      seen.add(c)
+      if ((outLinks.get(c) ?? []).some((l) => l.kind === 'trunk')) return c
+      queue.push(...(children.get(c) ?? []))
+    }
+    return null
   }
 
   const startMemo = new Map<string, string>()
@@ -320,7 +340,8 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
     barEnd: number
     end: TimelineEnd
     links: Array<MergeLink & { cs: number; ce: number }>
-    label: TimelineLane['label'] & { above: boolean }
+    label: TimelineLane['label']
+    coveredBy: string | null
     left: number
     right: number
   }
@@ -336,11 +357,13 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
     })
     const childForkX = (children.get(n) ?? []).map((c) => x(startOf(c)))
     const hasDeploys = node.deploys.length > 0
+    const covered = hasDeploys ? coveredBy(n) : null
     let end: TimelineEnd
     if (links.some((l) => l.kind === 'trunk')) end = 'merged'
     else if (links.some((l) => l.kind === 'include')) end = 'included'
     else if (links.length > 0) end = 'stub'
     else if (!hasDeploys) end = 'cited'
+    else if (covered) end = 'covered'
     else if (node.firstProductionOn && daysBetween(node.firstProductionOn, today) > UNMERGED_DAYS) end = 'unmerged-prod'
     else end = 'open'
     let barEnd = xs
@@ -348,15 +371,15 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
     else if (end === 'open' || end === 'unmerged-prod') barEnd = Math.max(barEnd, todayX)
     else if (node.lastDeployedOn) barEnd = Math.max(barEnd, x(node.lastDeployedOn))
     if (childForkX.length > 0) barEnd = Math.max(barEnd, ...childForkX)
+    // O tracinho de fim não pode cair em cima da bolinha de produção quando o último deploy é o primeiro em produção.
+    if (end === 'covered' && node.firstProductionOn) barEnd = Math.max(barEnd, x(node.firstProductionOn) + 12)
 
     const labelW = n.length * LABEL_CHAR + 6
-    const closes = end === 'merged' || end === 'included'
-    const above = !closes || labelW <= barEnd - xs + 24
-    const lastCurveEnd = links.length > 0 ? Math.max(...links.map((l) => l.ce)) : barEnd
-    const labelX = above ? xs : lastCurveEnd + 8
-    const endExtra = closes ? CURVE + 14 : end === 'stub' ? 40 : end === 'unmerged-prod' ? 22 : end === 'open' ? 14 : 4
-    const right = Math.max(barEnd + endExtra, labelX + labelW) + 6
-    plans.set(n, { name: n, node, xf, xs, barEnd, end, links, label: { x: labelX, y: 0, width: labelW, above }, left: xf - 4, right })
+    const capEnd = end === 'open' ? 6 : end === 'unmerged-prod' ? 9 : end === 'covered' ? 2 : 0
+    const linkEnd = links.length > 0 ? Math.max(...links.map((l) => (l.kind === 'stub' ? l.cs + 32 + l.target.length * 6.5 : l.ce))) : barEnd
+    const labelX = Math.max(barEnd + capEnd, linkEnd) + 10
+    const right = labelX + labelW + 6
+    plans.set(n, { name: n, node, xf, xs, barEnd, end, links, label: { x: labelX, y: 0, width: labelW }, coveredBy: covered, left: xf - 4, right })
   }
 
   const laneOf = new Map<string, number>()
@@ -391,9 +414,21 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
   }
   const late = (n: string) => plans.get(rootOf(n))!.end === 'unmerged-prod'
   const byStart = [...names].sort((a, b) => plans.get(a)!.xf - plans.get(b)!.xf || a.localeCompare(b))
-  for (const n of byStart.filter((x) => !late(x))) place(n)
+  // Em árvore: cada branch vem seguida das filhas, para a filha cair logo abaixo e o fork ficar curto; sobras de ciclo entram por data.
+  const order: string[] = []
+  const queued = new Set<string>()
+  const enqueue = (n: string) => {
+    if (queued.has(n)) return
+    queued.add(n)
+    order.push(n)
+    const kids = [...(children.get(n) ?? [])].sort((a, b) => plans.get(a)!.xf - plans.get(b)!.xf || a.localeCompare(b))
+    for (const c of kids) enqueue(c)
+  }
+  for (const n of byStart) if (parent.get(n) === null || parent.get(n) === trunk) enqueue(n)
+  for (const n of byStart) enqueue(n)
+  for (const n of order.filter((x) => !late(x))) place(n)
   floor = Math.max(1, ...laneOf.values()) + 1
-  for (const n of byStart.filter(late)) place(n)
+  for (const n of order.filter(late)) place(n)
 
   const laneY = (k: number) => k * LANE_H - 12
   const yOf = (n: string) => (n === trunk ? 0 : laneY(laneOf.get(n)!))
@@ -424,7 +459,7 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
       const c = curveOf(l.cs, y, l.ce, ty, 0.55, 0.45)
       links.push({ key: `${l.kind}|${n}|${l.target}`, kind: l.kind === 'trunk' ? 'merge' : 'include', lane: n, target: l.target, d: pathOf(c), arrow: true })
       crossings.push({ lane: n, target: l.target, curve: c })
-      if (l.kind === 'trunk') merges.push({ key: `node|${n}`, branch: n, x: x(l.on), label: `${l.on.slice(8, 10)}/${l.on.slice(5, 7)}`, showLabel: true })
+      if (l.kind === 'trunk') merges.push({ key: `node|${n}`, branch: n, x: x(l.on), label: `${l.on.slice(8, 10)}/${l.on.slice(5, 7)}`, showLabel: true, level: 0 })
     }
   }
 
@@ -441,10 +476,14 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
   }
 
   merges.sort((a, b) => a.x - b.x)
-  let lastShown = -Infinity
+  const lastX = [-Infinity, -Infinity]
   for (const m of merges) {
-    m.showLabel = m.x - lastShown >= 40
-    if (m.showLabel) lastShown = m.x
+    const level = lastX.findIndex((lx) => m.x - lx >= 40)
+    m.showLabel = level >= 0
+    if (level >= 0) {
+      m.level = level === 1 ? 1 : 0
+      lastX[level] = m.x
+    }
   }
 
   const lanes: TimelineLane[] = names
@@ -462,6 +501,7 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
       if (node.firstProductionOn) parts.push(`em produção desde ${formatDate(node.firstProductionOn)}`)
       else if (node.deploys.length > 0) parts.push('só em staging')
       for (const l of pl.links) parts.push(`${l.kind === 'include' ? 'incluída em' : 'mesclada em'} ${l.target}, ${formatDate(l.on)}`)
+      if (pl.end === 'covered') parts.push(`sem merge próprio: coberta pelo merge de ${pl.coveredBy} na ${trunk}`)
       if (pl.end === 'unmerged-prod') parts.push(`sem merge registrado há mais de ${UNMERGED_DAYS} dias em produção`)
       return {
         name: n,
@@ -474,7 +514,7 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
         prodX,
         bars,
         end: pl.end,
-        label: { x: pl.label.x, y: pl.label.above ? y - 22 : y - 8, width: pl.label.width },
+        label: { x: pl.label.x, y: y - 9, width: pl.label.width },
         inProduction: node.firstProductionOn !== null,
         title: parts.length > 0 ? `${n}: ${parts.join('; ')}` : n,
       }

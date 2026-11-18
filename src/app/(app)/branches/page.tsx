@@ -144,6 +144,10 @@ function Legend({ trunk }: { trunk: string }) {
         Incluída em outra branch
       </span>
       <span className="inline-flex items-center gap-2">
+        <svg width="14" height="14" aria-hidden="true"><path d="M7 2v10" stroke="var(--ink-2)" strokeWidth="2" strokeLinecap="round" /></svg>
+        Sem merge próprio, coberta por uma filha
+      </span>
+      <span className="inline-flex items-center gap-2">
         <svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--pop)" stroke="var(--staging)" strokeWidth="2" /></svg>
         Aberta
       </span>

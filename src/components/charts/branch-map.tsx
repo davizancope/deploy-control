@@ -16,7 +16,7 @@ const BAR_COLOR: Record<TimelineLane['bars'][number]['state'], string> = {
 const LABEL_BG = 'linear-gradient(var(--pop), var(--pop))'
 
 /**
- * Mapa de branches no tempo: o tronco é a linha fixa no topo e cada branch é uma raia que desce da origem e volta com uma seta no merge.
+ * Mapa de branches no tempo: o tronco é a linha fixa no topo e cada branch é uma raia que desce da origem (a filha logo sob o pai) e volta com uma seta no merge; o nome fica no fim da barra.
  * @param props.timeline Posições já calculadas.
  * @param props.selected Branch selecionada: ela, as origens até o tronco e os merges dela ficam em destaque.
  * @param props.dimProduction Esmaece o que já foi para produção, para destacar o que ainda falta subir.
@@ -47,7 +47,7 @@ export function BranchMap({
   return (
     <div className="max-h-[70vh] overflow-auto">
       <div className="relative" style={{ width: t.width, minWidth: '100%' }}>
-        <div className="sticky top-0 z-20 bg-[var(--pop)]" style={{ height: HEADER_H }}>
+        <div className="sticky top-0 z-20 bg-[var(--pop-solid)]" style={{ height: HEADER_H }}>
           <svg className="absolute inset-0 overflow-visible" width={t.width} height={HEADER_H} aria-hidden="true">
             {t.ticks.map((k) => (
               <text key={k.x} x={k.x} y={18} textAnchor="middle" fontSize="12" fill="var(--muted)">{k.label}</text>
@@ -61,7 +61,7 @@ export function BranchMap({
             {t.merges.map((m) => (
               <g key={m.key}>
                 <circle cx={m.x} cy={HEADER_H} r={6} fill="var(--production)" stroke="var(--pop)" strokeWidth="2" />
-                {m.showLabel && <text x={m.x} y={HEADER_H - 14} textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--production)">{m.label}</text>}
+                {m.showLabel && <text x={m.x} y={HEADER_H - 14 - m.level * 13} textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--production)">{m.label}</text>}
               </g>
             ))}
           </svg>
@@ -100,6 +100,7 @@ export function BranchMap({
                   ))}
                   {l.prodX !== null && <circle cx={l.prodX} cy={l.y} r={5} fill="var(--production)" stroke="var(--pop)" strokeWidth="2" />}
                   {l.end === 'open' && <circle cx={l.xEnd} cy={l.y} r={6} fill="var(--pop)" stroke="var(--staging)" strokeWidth="2" />}
+                  {l.end === 'covered' && <line x1={l.xEnd} x2={l.xEnd} y1={l.y - 6} y2={l.y + 6} stroke="var(--ink-2)" strokeWidth="2" strokeLinecap="round" />}
                   {l.end === 'unmerged-prod' && (
                     <g>
                       <circle cx={l.xEnd} cy={l.y} r={9} fill="var(--pop)" stroke="var(--warn)" strokeWidth="2" />
