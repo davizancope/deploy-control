@@ -87,9 +87,6 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight">Branches</h1>
-          <div className="my-2">
-            <ProductionTag current={production} trunk={timeline.trunk} today={todayIso()} href={production?.branch ? hrefFor(production.branch) : null} />
-          </div>
           <p className="max-w-[60ch] text-ink-2">
             De onde cada branch nasceu e quando voltou para a {timeline.trunk} em {project.name}. Clique numa branch para ver o ciclo de vida.
           </p>
@@ -115,6 +112,10 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
           <button type="submit" className="btn-quiet py-1.5 text-sm">Aplicar</button>
         </form>
       </header>
+
+      <div className="-mt-2 mb-6">
+        <ProductionTag current={production} trunk={timeline.trunk} today={todayIso()} href={production?.branch ? hrefFor(production.branch) : null} />
+      </div>
 
       {node && <ClearOnEscape href={clearHref} />}
       {graph.nodes.size === 0 ? (
