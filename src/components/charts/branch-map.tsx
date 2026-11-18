@@ -90,6 +90,19 @@ export function BranchMap({
               <line key={k.x} x1={k.x} x2={k.x} y1={0} y2={t.height} stroke="var(--line)" />
             ))}
             <line x1={t.todayX} x2={t.todayX} y1={0} y2={t.height} stroke="var(--ink)" strokeWidth="2" strokeDasharray="4 4" opacity="0.35" />
+            {t.links.map((k) => (
+              <path
+                key={k.key}
+                d={k.d}
+                fill="none"
+                stroke={LINK_COLOR[k.kind]}
+                strokeWidth={linkActive(k) ? 3 : 2}
+                strokeLinecap="round"
+                strokeDasharray={k.kind === 'include' || k.kind === 'stub' ? '5 4' : undefined}
+                markerEnd={k.arrow ? (k.kind === 'merge' ? 'url(#bm-head-merge)' : 'url(#bm-head-include)') : undefined}
+                opacity={linkOpacity(k)}
+              />
+            ))}
             {t.lanes.map((l) => {
               const isSelected = l.name === selected
               return (
@@ -112,19 +125,6 @@ export function BranchMap({
             })}
             {t.forks.filter((f) => f.y !== 0).map((f) => (
               <circle key={f.key} cx={f.x} cy={f.y} r={3.5} fill="var(--muted)" opacity={linkOpacity({ lane: f.lane, kind: 'fork', target: '' } as TimelineLink)} />
-            ))}
-            {t.links.map((k) => (
-              <path
-                key={k.key}
-                d={k.d}
-                fill="none"
-                stroke={LINK_COLOR[k.kind]}
-                strokeWidth={linkActive(k) ? 3 : 2}
-                strokeLinecap="round"
-                strokeDasharray={k.kind === 'include' || k.kind === 'stub' ? '5 4' : undefined}
-                markerEnd={k.arrow ? (k.kind === 'merge' ? 'url(#bm-head-merge)' : 'url(#bm-head-include)') : undefined}
-                opacity={linkOpacity(k)}
-              />
             ))}
             {t.stubs.map((s) => (
               <text key={s.key} x={s.x} y={s.y + 4} fontSize="12" fill="var(--ink-2)" stroke="var(--pop)" strokeWidth="5" strokeLinejoin="round" paintOrder="stroke" className="code" opacity={laneOpacity(byName.get(s.lane)!)}>{s.text}</text>

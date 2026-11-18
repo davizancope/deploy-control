@@ -9,7 +9,9 @@ import { fetchAllPages, listProjects } from '@/lib/data'
 import { addDays, formatDate, plural } from '@/lib/format'
 import { todayIso } from '@/lib/parse/dates'
 import { requireContext } from '@/lib/session'
+import { branchesHref } from '@/lib/branch-url'
 import { deleteBranchMerge } from './actions'
+import { ClearOnEscape } from './clear-on-escape'
 import { MergeForm } from './merge-form'
 
 export const metadata: Metadata = { title: 'Branches' }
@@ -63,11 +65,8 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
   const timeline = layoutBranchTimeline(graph, { today: todayIso() })
   const node = selected ? graph.nodes.get(selected) : undefined
 
-  const hrefFor = (branch: string) => {
-    const q = new URLSearchParams({ projeto: project.id, periodo: period, branch })
-    if (pending) q.set('pendentes', '1')
-    return `/branches?${q}`
-  }
+  const clearHref = branchesHref({ projectId: project.id, period, pending })
+  const hrefFor = (branch: string) => branchesHref({ projectId: project.id, period, pending, branch, selected })
 
   return (
     <>
@@ -100,6 +99,7 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
         </form>
       </header>
 
+      {node && <ClearOnEscape href={clearHref} />}
       {graph.nodes.size === 0 ? (
         <p className="rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center text-ink-2">
           Nenhum deploy com branch neste período. Preencha a branch no registro do deploy para ela aparecer aqui.
@@ -115,7 +115,7 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
             )}
           </section>
           <div className="space-y-6">
-            {node && <BranchDetail graph={graph} trunk={timeline.trunk} node={node} hrefFor={hrefFor} projectId={project.id} canWrite={ctx.canWrite} today={todayIso()} />}
+            {node && <BranchDetail graph={graph} trunk={timeline.trunk} node={node} hrefFor={hrefFor} clearHref={clearHref} projectId={project.id} canWrite={ctx.canWrite} today={todayIso()} />}
             <Orphans items={graph.orphans} hrefFor={hrefFor} selected={selected} />
           </div>
         </div>
@@ -164,6 +164,7 @@ function BranchDetail({
   trunk,
   node,
   hrefFor,
+  clearHref,
   projectId,
   canWrite,
   today,
@@ -172,6 +173,7 @@ function BranchDetail({
   trunk: string
   node: BranchNode
   hrefFor: (b: string) => string
+  clearHref: string
   projectId: string
   canWrite: boolean
   today: string
@@ -186,7 +188,12 @@ function BranchDetail({
   const deploys = [...node.deploys].reverse()
   return (
     <section className="glass rounded-2xl p-5" aria-label={`Ciclo de vida de ${node.name}`}>
-      <h2 className="code mb-1 font-semibold break-all">{node.name}</h2>
+      <div className="mb-1 flex items-start gap-2">
+        <h2 className="code min-w-0 flex-1 font-semibold break-all">{node.name}</h2>
+        <Link href={clearHref} aria-label="Limpar seleção" title="Limpar seleção (Esc)" className="-mr-1.5 -mt-1 rounded-full p-1.5 text-ink-2 hover:bg-sunken hover:text-ink">
+          <Icon name="close" size={16} />
+        </Link>
+      </div>
       <p className="mb-4 text-sm text-ink-2">
         {node.firstProductionOn
           ? `Em produção desde ${formatDate(node.firstProductionOn)}.`

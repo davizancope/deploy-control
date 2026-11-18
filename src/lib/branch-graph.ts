@@ -99,7 +99,9 @@ export const HEADER_H = 64
 export const LANE_H = 60
 const X0 = 100
 const CURVE = 14
+const ELBOW = 10
 const HOP = 10
+const MIN_BAR = 5
 const LABEL_CHAR = 7.3
 const UNMERGED_DAYS = 14
 
@@ -216,6 +218,28 @@ function xAtY(c: Curve, y: number): number {
 }
 
 /**
+ * Acha o X de uma curva em S de tangentes verticais numa altura (a curva é monótona em Y).
+ * @param x0 X inicial.
+ * @param y0 Y inicial.
+ * @param x1 X final.
+ * @param y1 Y final.
+ * @param ym Altura dos dois controles.
+ * @param y Altura procurada.
+ * @returns X em que a curva passa por y.
+ */
+function verticalSAtY(x0: number, y0: number, x1: number, y1: number, ym: number, y: number): number {
+  const down = y1 >= y0
+  let lo = 0
+  let hi = 1
+  for (let i = 0; i < 28; i++) {
+    const t = (lo + hi) / 2
+    if ((bezier(y0, ym, ym, y1, t) < y) === down) lo = t
+    else hi = t
+  }
+  return bezier(x0, x0, x1, x1, (lo + hi) / 2)
+}
+
+/**
  * Tira de um trecho horizontal as folgas onde outras setas o cruzam.
  * @param x1 Início do trecho.
  * @param x2 Fim do trecho.
@@ -231,7 +255,7 @@ function cutGaps(x1: number, x2: number, gaps: number[]): Array<[number, number]
     from = Math.max(from, g + HOP / 2)
   }
   if (from < x2) out.push([from, x2])
-  return out
+  return out.filter(([a, b]) => b - a >= MIN_BAR)
 }
 
 /**
@@ -352,8 +376,9 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
     const xf = x(startOf(n))
     const xs = hasParent ? xf + CURVE : xf
     const links = (outLinks.get(n) ?? []).map((l) => {
-      const ce = l.kind === 'trunk' ? x(l.on) - 12 : l.kind === 'include' ? x(l.on) - 4 : x(l.on)
-      return { ...l, ce, cs: l.kind === 'stub' ? ce : ce - CURVE }
+      const at = x(l.on)
+      if (l.kind === 'stub') return { ...l, cs: Math.max(at, xs), ce: Math.max(at, xs) }
+      return { ...l, cs: Math.max(xs, at - ELBOW), ce: at }
     })
     const childForkX = (children.get(n) ?? []).map((c) => x(startOf(c)))
     const hasDeploys = node.deploys.length > 0
@@ -433,11 +458,12 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
   const laneY = (k: number) => k * LANE_H - 12
   const yOf = (n: string) => (n === trunk ? 0 : laneY(laneOf.get(n)!))
   const gaps = new Map<string, number[]>()
+  const crossAt = new Map<string, number[]>()
   const links: TimelineLink[] = []
   const stubs: TimelineStub[] = []
   const merges: TimelineMerge[] = []
   const forks: TimelineFork[] = []
-  const crossings: Array<{ lane: string; target: string; curve: Curve }> = []
+  const crossings: Array<{ lo: number; hi: number; at: (y: number) => number }> = []
 
   for (const n of names) {
     const pl = plans.get(n)!
@@ -447,7 +473,7 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
       const c = curveOf(pl.xf, yOf(p), pl.xs, y, 0.5, 0.5)
       links.push({ key: `fork|${p}|${n}`, kind: 'fork', lane: n, target: p, d: pathOf(c), arrow: false })
       forks.push({ key: `forkdot|${p}|${n}`, lane: n, x: pl.xf, y: yOf(p) })
-      crossings.push({ lane: n, target: p, curve: c })
+      crossings.push({ lo: Math.min(c.y0, c.y1), hi: Math.max(c.y0, c.y1), at: (yy) => xAtY(c, yy) })
     }
     for (const l of pl.links) {
       if (l.kind === 'stub') {
@@ -456,22 +482,45 @@ export function layoutBranchTimeline(graph: BranchGraph, opts: { today: string; 
         continue
       }
       const ty = l.kind === 'trunk' ? 0 : yOf(l.target)
-      const c = curveOf(l.cs, y, l.ce, ty, 0.55, 0.45)
-      links.push({ key: `${l.kind}|${n}|${l.target}`, kind: l.kind === 'trunk' ? 'merge' : 'include', lane: n, target: l.target, d: pathOf(c), arrow: true })
-      crossings.push({ lane: n, target: l.target, curve: c })
+      const up = ty < y
+      const yEnd = l.kind === 'trunk' ? 12 : ty + (up ? 6 : -6)
+      // Sai da raia, dobra num cotovelo e entra reto na bolinha do merge; no mesmo dia do fork não há espaço para o cotovelo e vira uma subida suave.
+      let d: string
+      let at: (yy: number) => number
+      if (l.ce - ELBOW >= pl.xs) {
+        d = `M${l.cs} ${y} Q${l.ce} ${y} ${l.ce} ${up ? y - ELBOW : y + ELBOW} V${yEnd}`
+        at = () => l.ce
+      } else {
+        const ym = (y + yEnd) / 2
+        d = `M${l.cs} ${y} C${l.cs} ${ym} ${l.ce} ${ym} ${l.ce} ${yEnd}`
+        at = (yy) => verticalSAtY(l.cs, y, l.ce, yEnd, ym, yy)
+      }
+      links.push({ key: `${l.kind}|${n}|${l.target}`, kind: l.kind === 'trunk' ? 'merge' : 'include', lane: n, target: l.target, d, arrow: true })
+      crossings.push({ lo: Math.min(y, ty), hi: Math.max(y, ty), at })
       if (l.kind === 'trunk') merges.push({ key: `node|${n}`, branch: n, x: x(l.on), label: `${l.on.slice(8, 10)}/${l.on.slice(5, 7)}`, showLabel: true, level: 0 })
     }
   }
 
   for (const cr of crossings) {
-    const lo = Math.min(cr.curve.y0, cr.curve.y1)
-    const hi = Math.max(cr.curve.y0, cr.curve.y1)
     for (const n of names) {
       const y = yOf(n)
-      if (y <= lo + 1 || y >= hi - 1) continue
-      const at = xAtY(cr.curve, y)
+      if (y <= cr.lo + 1 || y >= cr.hi - 1) continue
+      const at = cr.at(y)
       const pl = plans.get(n)!
+      crossAt.set(n, [...(crossAt.get(n) ?? []), at])
       if (at >= pl.xs - 2 && at <= pl.barEnd + 2) gaps.set(n, [...(gaps.get(n) ?? []), at])
+    }
+  }
+
+  // O nome não fica sobre a linha de outra branch: se um conector cruza a faixa do nome, o nome passa para depois dele, quando a raia tem espaço.
+  for (const n of names) {
+    const pl = plans.get(n)!
+    const nextLeft = Math.min(Infinity, ...(occupied[laneOf.get(n)!] ?? []).filter(([l]) => l > pl.left).map(([l]) => l))
+    let lx = pl.label.x
+    for (const c of [...(crossAt.get(n) ?? [])].sort((a, b) => a - b)) if (c > lx - 6 && c < lx + pl.label.width + 4) lx = c + 8
+    if (lx !== pl.label.x && lx + pl.label.width + 6 + 8 <= nextLeft) {
+      pl.label = { ...pl.label, x: lx }
+      pl.right = lx + pl.label.width + 6
     }
   }
 
