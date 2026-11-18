@@ -8,11 +8,13 @@ import { buildBranchGraph, layoutBranchTimeline, type BranchDeploy, type BranchG
 import { fetchAllPages, listProjects } from '@/lib/data'
 import { addDays, formatDate, plural } from '@/lib/format'
 import { todayIso } from '@/lib/parse/dates'
+import { currentProduction, type ProductionDeploy } from '@/lib/production-branch'
 import { requireContext } from '@/lib/session'
 import { branchesHref } from '@/lib/branch-url'
 import { deleteBranchMerge } from './actions'
 import { ClearOnEscape } from './clear-on-escape'
 import { MergeForm } from './merge-form'
+import { ProductionTag } from './production-tag'
 
 export const metadata: Metadata = { title: 'Branches' }
 
@@ -64,6 +66,18 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
   const graph = buildBranchGraph(rows as unknown as BranchDeploy[], mergeRows as unknown as BranchMerge[])
   const timeline = layoutBranchTimeline(graph, { today: todayIso() })
   const node = selected ? graph.nodes.get(selected) : undefined
+  // A produção atual não depende do período do filtro: é o deploy de produção mais recente do projeto.
+  const { data: latestProduction } = await ctx.supabase
+    .from('deployments')
+    .select('id, code_version, branch, deployed_on')
+    .eq('org_id', ctx.org.id)
+    .eq('project_id', project.id)
+    .eq('environment', 'production')
+    .order('deployed_on', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const production = currentProduction(latestProduction as unknown as ProductionDeploy | null, mergeRows as unknown as BranchMerge[], timeline.trunk)
 
   const clearHref = branchesHref({ projectId: project.id, period, pending })
   const hrefFor = (branch: string) => branchesHref({ projectId: project.id, period, pending, branch, selected })
@@ -73,6 +87,9 @@ export default async function BranchesPage({ searchParams }: PageProps<'/branche
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight">Branches</h1>
+          <div className="my-2">
+            <ProductionTag current={production} trunk={timeline.trunk} today={todayIso()} href={production?.branch ? hrefFor(production.branch) : null} />
+          </div>
           <p className="max-w-[60ch] text-ink-2">
             De onde cada branch nasceu e quando voltou para a {timeline.trunk} em {project.name}. Clique numa branch para ver o ciclo de vida.
           </p>
